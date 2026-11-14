@@ -3,11 +3,44 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>NECAVA · DETRAN/CE — Plataforma Veicular PoC</title>
+    <title>NECAVA · DETRAN/CE — Plataforma Digital de Registro &amp; Transferência Veicular</title>
+    <meta
+      name="description"
+      content="Plataforma Digital de Registro e Transferência Veicular credenciada ao DETRAN/CE — NECAVA Inspeção e Pesquisa em Transportes Ltda."
+    />
+    <meta property="og:title" content="NECAVA · DETRAN/CE — Plataforma Veicular PoC" />
+    <meta
+      property="og:description"
+      content="Ambiente integrado de conformidade operacional para primeiro registro, transferência digital, mesa revisora, antifraude e visão computacional."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link id="app-theme-css" rel="stylesheet" href="/themes/theme-night.css" />
+    <script>
+      (function () {
+        try {
+          var files = {
+            night: '/themes/theme-night.css',
+            light: '/themes/theme-light.css',
+            'high-contrast': '/themes/theme-high-contrast.css'
+          }
+          var saved = localStorage.getItem('necava_theme')
+          var theme = files[saved] ? saved : 'night'
+          var link = document.getElementById('app-theme-css')
+          if (link) {
+            link.setAttribute('href', files[theme])
+          }
+          document.documentElement.dataset.theme = theme
+        } catch (e) {}
+      })()
+    </script>
   </head>
-  <body class="bg-slate-950 text-slate-100">
+  <body class="antialiased">
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
-

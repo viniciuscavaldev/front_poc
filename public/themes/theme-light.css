@@ -1,0 +1,74 @@
+/* ==========================================================================
+   CIPETRAN / NECAVA · DETRAN-CE — TEMA LIGHT (MODO CLARO INDEPENDENTE)
+   Calibrado para ALTA LEGIBILIDADE EM PROJETOR (parede direta sem tela / baixo nit).
+   Paleta oficial derivada da logo CIPETRAN:
+   - #f5f5de : Bege (sub-superfícies, cabeçalhos internos e botões secundários)
+   - #e7e441 : Amarelo (destaque institucional e alertas de alto brilho)
+   - #50502e : Cinza-amarelado escuro (CTAs, bordas fortes e acentos estruturais)
+   - #7d722e : Verde-oliva (hover, destaques ativos e bordas de ênfase)
+   - #9a9e88 : Cinza-esverdeado (base do fundo matte anti-ofuscamento e divisores)
+   ========================================================================== */
+
+:root {
+  color-scheme: light;
+
+  /* Superfícies & Fundos (Contraste acentuado para não fundir com parede clara) */
+  --bg-canvas: #d5d9c0;
+  --bg-sidebar: #c3c8ab;
+  --bg-topbar: #c9ceb2;
+  --bg-surface: #ffffff;
+  --bg-surface-alt: #f5f5de;
+  --bg-surface-hover: #e7e9d3;
+  --bg-input: #ffffff;
+  --bg-console: #1a1b0e;
+  --bg-modal: #ffffff;
+  --bg-toast: #ffffff;
+
+  /* Bordas Sólidas (Sem transparência fraca para resistir ao brilho do projetor) */
+  --border-subtle: #82876b;
+  --border-strong: #50502e;
+
+  /* Tipografia de Alto Contraste para Leitura à Distância */
+  --text-primary: #141509;
+  --text-secondary: #2c2d15;
+  --text-muted: #424424;
+  --text-subtle: #50502e;
+
+  /* Acentos Principais (Cinza-amarelado #50502e + Verde-oliva #7d722e + Amarelo #e7e441) */
+  --accent-primary: #50502e;
+  --accent-primary-hover: #7d722e;
+  --accent-on-primary: #f5f5de;
+  --accent-highlight: #e7e441;
+  --accent-on-highlight: #141509;
+  --accent-soft: #f3f09c;
+  --accent-border: #50502e;
+  --accent-text: #4c4514;
+
+  /* Cores Semânticas Saturadas para Projeção */
+  --semantic-success-bg: #dcfce7;
+  --semantic-success-border: #15803d;
+  --semantic-success-text: #14532d;
+
+  --semantic-info-bg: #dbeafe;
+  --semantic-info-border: #1d4ed8;
+  --semantic-info-text: #1e3a8a;
+
+  --semantic-warning-bg: #f6f28a;
+  --semantic-warning-border: #7d722e;
+  --semantic-warning-text: #36300a;
+
+  --semantic-danger-bg: #fee2e2;
+  --semantic-danger-border: #b91c1c;
+  --semantic-danger-text: #7f1d1d;
+
+  /* Botões Secundários */
+  --btn-secondary-bg: #f5f5de;
+  --btn-secondary-hover: #f1ef9e;
+  --btn-secondary-border: #50502e;
+  --btn-secondary-text: #141509;
+
+  /* Scrollbar */
+  --scrollbar-track: #c3c8ab;
+  --scrollbar-thumb: #7d722e;
+  --scrollbar-thumb-hover: #50502e;
+}

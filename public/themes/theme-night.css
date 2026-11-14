@@ -1,0 +1,68 @@
+/* ==========================================================================
+   CIPETRAN / NECAVA · DETRAN-CE — TEMA NIGHT (MODO ESCURO INDEPENDENTE)
+   Arquivo CSS 100% isolado para operação noturna (Dark GovTech Obsidian).
+   ========================================================================== */
+
+:root {
+  color-scheme: dark;
+
+  /* Superfícies & Fundos */
+  --bg-canvas: #0b0f17;
+  --bg-sidebar: #0d131f;
+  --bg-topbar: rgba(11, 15, 23, 0.95);
+  --bg-surface: #111827;
+  --bg-surface-alt: #0b0f17;
+  --bg-surface-hover: rgba(30, 41, 59, 0.6);
+  --bg-input: #0b0f17;
+  --bg-console: #0b0f17;
+  --bg-modal: #111827;
+  --bg-toast: rgba(11, 15, 23, 0.96);
+
+  /* Bordas */
+  --border-subtle: rgba(30, 41, 59, 0.85);
+  --border-strong: #334155;
+
+  /* Tipografia */
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --text-subtle: #64748b;
+
+  /* Acentos Principais */
+  --accent-primary: #059669;
+  --accent-primary-hover: #10b981;
+  --accent-on-primary: #ffffff;
+  --accent-highlight: #10b981;
+  --accent-on-highlight: #022c22;
+  --accent-soft: rgba(16, 185, 129, 0.12);
+  --accent-border: rgba(16, 185, 129, 0.4);
+  --accent-text: #34d399;
+
+  /* Cores Semânticas para Texto / Badges */
+  --semantic-success-bg: rgba(16, 185, 129, 0.12);
+  --semantic-success-border: rgba(16, 185, 129, 0.38);
+  --semantic-success-text: #34d399;
+
+  --semantic-info-bg: rgba(14, 165, 233, 0.12);
+  --semantic-info-border: rgba(14, 165, 233, 0.38);
+  --semantic-info-text: #38bdf8;
+
+  --semantic-warning-bg: rgba(245, 158, 11, 0.12);
+  --semantic-warning-border: rgba(245, 158, 11, 0.38);
+  --semantic-warning-text: #fbbf24;
+
+  --semantic-danger-bg: rgba(239, 68, 68, 0.12);
+  --semantic-danger-border: rgba(239, 68, 68, 0.4);
+  --semantic-danger-text: #f87171;
+
+  /* Botões Secundários */
+  --btn-secondary-bg: #1e293b;
+  --btn-secondary-hover: #334155;
+  --btn-secondary-border: #334155;
+  --btn-secondary-text: #f1f5f9;
+
+  /* Scrollbar */
+  --scrollbar-track: #0b0f17;
+  --scrollbar-thumb: #1e293b;
+  --scrollbar-thumb-hover: #334155;
+}

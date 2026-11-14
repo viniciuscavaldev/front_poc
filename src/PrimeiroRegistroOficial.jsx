@@ -1,54 +1,562 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
 import {
-  Car, FileText, CheckCircle2, AlertTriangle, ShieldCheck, QrCode,
-  MapPin, Download, RefreshCw, ExternalLink, ArrowRight, Clock, Award,
-  ShieldAlert, Play, Check, RotateCcw, X, Activity, Code2, Copy, CheckCheck,
-  Sparkles, Printer
+  Car,
+  FileText,
+  CheckCircle2,
+  ShieldCheck,
+  Download,
+  RefreshCw,
+  ArrowRight,
+  ShieldAlert,
+  Play,
+  Check,
+  RotateCcw,
+  X,
+  Code2,
+  Copy,
+  CheckCheck,
+  Printer,
+  Lock,
+  Eye,
+  EyeOff,
+  AlertCircle,
+  KeyRound,
+  ChevronRight,
+  ChevronDown,
+  ChevronUp,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react'
+import { useToast } from './ToastContext'
 
 const api = axios.create({ baseURL: '/api/poc-ce', timeout: 15000 })
 
-export default function PrimeiroRegistroOficial({ onAtualizarDashboard }) {
+const ROMAN_NUMERALS = [
+  'I',
+  'II',
+  'III',
+  'IV',
+  'V',
+  'VI',
+  'VII',
+  'VIII',
+  'IX',
+  'X',
+  'XI',
+  'XII',
+  'XIII',
+  'XIV',
+  'XV'
+]
+
+function VioQrCodeSvg() {
+  const size = 29
+  const isFinder = (r, c) =>
+    (r < 7 && c < 7) || (r < 7 && c >= size - 7) || (r >= size - 7 && c < 7)
+  const isAlignment = (r, c) => r >= 20 && r <= 24 && c >= 20 && c <= 24
+  const cells = []
+  for (let r = 0; r < size; r++) {
+    for (let c = 0; c < size; c++) {
+      let on = false
+      if (r < 7 && c < 7) {
+        on = r === 0 || r === 6 || c === 0 || c === 6 || (r >= 2 && r <= 4 && c >= 2 && c <= 4)
+      } else if (r < 7 && c >= size - 7) {
+        const cc = c - (size - 7)
+        on = r === 0 || r === 6 || cc === 0 || cc === 6 || (r >= 2 && r <= 4 && cc >= 2 && cc <= 4)
+      } else if (r >= size - 7 && c < 7) {
+        const rr = r - (size - 7)
+        on = rr === 0 || rr === 6 || c === 0 || c === 6 || (rr >= 2 && rr <= 4 && c >= 2 && c <= 4)
+      } else if (isAlignment(r, c)) {
+        const ar = r - 20
+        const ac = c - 20
+        on = ar === 0 || ar === 4 || ac === 0 || ac === 4 || (ar === 2 && ac === 2)
+      } else if (!isFinder(r, c)) {
+        if (r === 6 || c === 6) {
+          on = (r + c) % 2 === 0
+        } else {
+          on = (r * 19 + c * 37 + r * c * 11 + 5) % 13 < 6
+        }
+      }
+      if (on) cells.push({ r, c })
+    }
+  }
+
+  return (
+    <svg
+      viewBox={`0 0 ${size} ${size}`}
+      className="w-28 h-28 sm:w-32 sm:h-32 text-slate-950"
+      role="img"
+      aria-label="QR Code VIO de validação DETRAN-CE"
+    >
+      <rect width={size} height={size} fill="#ffffff" />
+      {cells.map((cell, idx) => (
+        <rect key={idx} x={cell.c} y={cell.r} width={1} height={1} fill="currentColor" />
+      ))}
+    </svg>
+  )
+}
+
+function CrlvField({ label, value, mono = false, highlight = false, className = '' }) {
+  return (
+    <div className={`min-w-0 ${className}`}>
+      <div className="text-[7.5px] sm:text-[8px] font-semibold text-slate-600 uppercase tracking-tight leading-none">
+        {label}
+      </div>
+      <div
+        className={`text-[10.5px] sm:text-[11px] font-extrabold uppercase leading-tight mt-0.5 truncate ${
+          mono ? 'font-mono tabular-nums' : ''
+        } ${highlight ? 'text-[#006B3F]' : 'text-slate-950'}`}
+      >
+        {value}
+      </div>
+    </div>
+  )
+}
+
+function CrlvDocumentCard({ dados, printable = false }) {
+  const dataEmissao = new Date().toLocaleDateString('pt-BR')
+  const placaAtual = dados.veiculo.placaAtribuida || 'NEV1A26'
+  const exercicioAtual = new Date().getFullYear()
+
+  return (
+    <div
+      id={printable ? 'crlv-printable-document' : undefined}
+      className="bg-white text-slate-950 rounded-md border border-slate-400 shadow-lg overflow-hidden select-text"
+    >
+      {/* CABEÇALHO OFICIAL ESCURO PADRÃO CRLV-e */}
+      <div className="bg-[#3d4240] text-white px-4 py-2.5 flex items-center justify-between gap-4 border-b-2 border-[#006B3F]">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="bg-white/95 rounded px-1 py-0.5 shrink-0">
+            <img
+              src="/assets/aistudio/logo-ceara_6a8ea5c6.png"
+              alt="Brasão do Governo do Estado do Ceará"
+              className="w-8 h-10 object-contain"
+            />
+          </div>
+          <div className="min-w-0">
+            <div className="text-xs sm:text-sm font-bold tracking-wide uppercase leading-tight truncate">
+              Governo do Estado do Ceará
+            </div>
+            <div className="text-[9px] text-slate-200 uppercase tracking-wider leading-tight truncate">
+              Secretaria da Infraestrutura e Trânsito
+            </div>
+            <div className="text-[8.5px] text-slate-300 uppercase tracking-wider leading-tight truncate">
+              Departamento Estadual de Trânsito · DETRAN-CE
+            </div>
+          </div>
+        </div>
+
+        <div className="shrink-0 text-right">
+          <div className="text-base sm:text-xl font-black tracking-tight leading-none text-white">
+            ce.gov.br
+          </div>
+          <div className="text-[7.5px] font-mono uppercase tracking-widest text-emerald-300 mt-0.5">
+            CRLV-e Digital
+          </div>
+        </div>
+      </div>
+
+      {/* METADE SUPERIOR: 2 COLUNAS SEPARADAS POR LINHA PONTILHADA */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 border-b border-dashed border-slate-400">
+        {/* QUADRANTE SUPERIOR ESQUERDO */}
+        <div className="p-3 sm:p-4 lg:border-r lg:border-dashed lg:border-slate-400 space-y-2">
+          <div className="border-b border-slate-400 pb-1">
+            <div className="text-[8px] font-bold text-slate-600 uppercase leading-none">
+              DETRAN - CE
+            </div>
+            <div className="text-[9.5px] sm:text-[10px] font-black text-slate-900 uppercase tracking-tight mt-0.5">
+              Certificado de Registro e Licenciamento de Veículo - Eletrônico
+            </div>
+          </div>
+
+          {/* BLOCO IDENTIFICAÇÃO PRINCIPAL + QR CODE VIO */}
+          <div className="grid grid-cols-[1fr_auto] gap-2.5 items-stretch">
+            <div className="flex flex-col justify-between space-y-1.5 min-w-0">
+              <CrlvField label="Código RENAVAM" value="01429817451" mono />
+
+              <div className="grid grid-cols-2 border-t border-slate-300 pt-1">
+                <CrlvField label="Placa" value={placaAtual} mono highlight />
+                <CrlvField
+                  label="Exercício"
+                  value={String(exercicioAtual)}
+                  mono
+                  className="border-l border-slate-300 pl-2"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 border-t border-slate-300 pt-1">
+                <CrlvField label="Ano Fabricação" value={dados.veiculo.anoFabricacao} mono />
+                <CrlvField
+                  label="Ano Modelo"
+                  value={dados.veiculo.anoModelo}
+                  mono
+                  className="border-l border-slate-300 pl-2"
+                />
+              </div>
+
+              <div className="border-t border-slate-300 pt-1">
+                <CrlvField label="Número do CRV" value="01429817451" mono />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1 pl-2 border-l border-slate-200 shrink-0">
+              <VioQrCodeSvg />
+              <span className="[writing-mode:vertical-rl] rotate-180 text-[7.5px] font-semibold text-slate-600 tracking-tight select-none text-center">
+                Valide este QRCode com app Vio
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-[1.5fr_1fr] border-t border-slate-300 pt-1.5">
+            <CrlvField label="Código de Segurança do CLA" value="98412847192" mono />
+            <CrlvField
+              label="CAT"
+              value="***"
+              mono
+              className="border-l border-slate-300 pl-2"
+            />
+          </div>
+
+          <div className="border-t border-slate-300 pt-1.5">
+            <CrlvField
+              label="Marca / Modelo / Versão"
+              value={`I/${dados.veiculo.marca} ${dados.veiculo.modelo}`}
+            />
+          </div>
+
+          <div className="border-t border-slate-300 pt-1.5">
+            <CrlvField
+              label="Espécie / Tipo"
+              value={dados.veiculo.tipo || 'PASSAGEIRO AUTOMÓVEL'}
+            />
+          </div>
+
+          <div className="grid grid-cols-[1fr_1.35fr] border-t border-slate-300 pt-1.5">
+            <CrlvField label="Placa Anterior / UF" value="*******/**" mono />
+            <CrlvField
+              label="Chassi"
+              value={dados.veiculo.chassi}
+              mono
+              className="border-l border-slate-300 pl-2"
+            />
+          </div>
+
+          <div className="grid grid-cols-[1fr_1.35fr] border-t border-slate-300 pt-1.5">
+            <CrlvField label="Cor Predominante" value={dados.veiculo.cor} />
+            <CrlvField
+              label="Combustível"
+              value={dados.veiculo.combustivel}
+              className="border-l border-slate-300 pl-2"
+            />
+          </div>
+        </div>
+
+        {/* QUADRANTE SUPERIOR DIREITO */}
+        <div className="p-3 sm:p-4 space-y-1.5 flex flex-col justify-between">
+          <div className="space-y-1.5">
+            <div className="grid grid-cols-[1.5fr_1fr]">
+              <CrlvField label="Categoria" value="PARTICULAR" />
+              <CrlvField
+                label="Capacidade"
+                value="*.*"
+                mono
+                className="border-l border-slate-300 pl-2"
+              />
+            </div>
+
+            <div className="grid grid-cols-[1.5fr_1fr] border-t border-slate-300 pt-1">
+              <CrlvField
+                label="Potência / Cilindrada"
+                value={dados.veiculo.potencia || '156CV/1595'}
+                mono
+              />
+              <CrlvField
+                label="Peso Bruto Total"
+                value="1.85"
+                mono
+                className="border-l border-slate-300 pl-2"
+              />
+            </div>
+
+            <div className="grid grid-cols-[1.5fr_0.65fr_0.5fr_0.65fr] border-t border-slate-300 pt-1 gap-1">
+              <CrlvField label="Motor" value={dados.veiculo.motor || '27182030194812'} mono />
+              <CrlvField
+                label="CMT"
+                value="1.5"
+                mono
+                className="border-l border-slate-300 pl-1.5"
+              />
+              <CrlvField
+                label="Eixos"
+                value="2"
+                mono
+                className="border-l border-slate-300 pl-1.5"
+              />
+              <CrlvField
+                label="Lotação"
+                value="05P"
+                mono
+                className="border-l border-slate-300 pl-1.5"
+              />
+            </div>
+
+            <div className="border-t border-slate-300 pt-1">
+              <CrlvField label="Carroceria" value="NÃO APLICÁVEL" />
+            </div>
+
+            <div className="border-t border-slate-300 pt-1">
+              <CrlvField label="Nome" value={dados.adquirente.nome} />
+            </div>
+
+            <div className="grid grid-cols-[1.5fr_1fr] border-t border-slate-300 pt-1">
+              <div />
+              <CrlvField
+                label="CPF / CNPJ"
+                value={dados.adquirente.cpf}
+                mono
+                className="border-l border-slate-300 pl-2"
+              />
+            </div>
+
+            <div className="grid grid-cols-[1.5fr_1fr] border-t border-slate-300 pt-1">
+              <CrlvField label="Local" value="FORTALEZA CE" />
+              <CrlvField
+                label="Data"
+                value={dataEmissao}
+                mono
+                className="border-l border-slate-300 pl-2"
+              />
+            </div>
+
+            <div className="border-t border-slate-300 pt-1 text-center text-[7.5px] font-bold text-slate-600 uppercase tracking-wider">
+              Assinado digitalmente pelo DETRAN-CE · e-CNPJ ICP-Brasil (PAdES)
+            </div>
+          </div>
+
+          {/* QUADRO DADOS DO SEGURO DPVAT */}
+          <div className="pt-1 space-y-1">
+            <div className="flex items-center justify-between border-b border-slate-400 pb-0.5">
+              <span className="text-[8px] font-extrabold text-slate-800 uppercase">
+                Dados do Seguro DPVAT
+              </span>
+              <span className="text-[7.5px] font-mono text-slate-500">00150316161</span>
+            </div>
+
+            <div className="grid grid-cols-[0.75fr_1fr_1.5fr] gap-1 text-[7.5px]">
+              <div>
+                <div className="text-slate-500 uppercase font-semibold leading-tight">Cat. Tarif</div>
+                <div className="font-mono font-bold text-slate-900">*</div>
+              </div>
+              <div className="border-l border-slate-300 pl-1.5">
+                <div className="text-slate-500 uppercase font-semibold leading-tight">
+                  Data de Quitação
+                </div>
+                <div className="font-mono font-bold text-slate-900">*</div>
+              </div>
+              <div className="border-l border-slate-300 pl-1.5">
+                <div className="text-slate-500 uppercase font-semibold leading-tight">Pagamento</div>
+                <div className="flex items-center gap-2 mt-0.5 text-[7px] font-semibold text-slate-700">
+                  <span className="inline-flex items-center gap-1">
+                    <span className="w-2.5 h-2.5 border border-slate-500 inline-block" /> COTA ÚNICA
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <span className="w-2.5 h-2.5 border border-slate-500 inline-block" /> PARCELADO
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-1 border-t border-slate-300 pt-1 text-[7px]">
+              <div>
+                <div className="text-slate-500 uppercase font-semibold leading-tight">
+                  Repasse Obrigatório ao Fundo Nacional de Saúde (R$)
+                </div>
+                <div className="font-mono font-bold text-slate-900">*</div>
+              </div>
+              <div className="border-l border-slate-300 pl-1.5">
+                <div className="text-slate-500 uppercase font-semibold leading-tight">
+                  Custo do Bilhete (R$)
+                </div>
+                <div className="font-mono font-bold text-slate-900">*</div>
+              </div>
+              <div className="border-l border-slate-300 pl-1.5">
+                <div className="text-slate-500 uppercase font-semibold leading-tight">
+                  Custo Efetivo do Seguro (R$)
+                </div>
+                <div className="font-mono font-bold text-slate-900">*</div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-1 border-t border-slate-300 pt-1 text-[7px]">
+              <div>
+                <div className="text-slate-500 uppercase font-semibold leading-tight">
+                  Repasse Obrigatório ao Órgão Nacional de Trânsito (R$)
+                </div>
+                <div className="font-mono font-bold text-slate-900">*</div>
+              </div>
+              <div className="border-l border-slate-300 pl-1.5">
+                <div className="text-slate-500 uppercase font-semibold leading-tight">
+                  Valor do IOF (R$)
+                </div>
+                <div className="font-mono font-bold text-slate-900">*</div>
+              </div>
+              <div className="border-l border-slate-300 pl-1.5">
+                <div className="text-slate-500 uppercase font-semibold leading-tight">
+                  Valor Total a Ser Pago pelo Segurado (R$)
+                </div>
+                <div className="font-mono font-bold text-slate-900">*</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* METADE INFERIOR: OBSERVAÇÕES, MENSAGENS E INFORMAÇÕES DPVAT */}
+      <div className="grid grid-cols-1 lg:grid-cols-2">
+        <div className="p-3 sm:p-4 lg:border-r lg:border-dashed lg:border-slate-400 space-y-3">
+          <div className="relative border border-slate-400 rounded-sm px-3 pt-3 pb-2.5 min-h-[68px]">
+            <span className="absolute -top-2 left-2.5 bg-white px-1 text-[8px] font-bold text-slate-700 uppercase">
+              Observações do Veículo
+            </span>
+            <div className="font-mono text-[9.5px] font-bold text-slate-900 leading-relaxed space-y-0.5">
+              <div>SEM RESERVA · VEÍCULO 0KM (1º REGISTRO DIGITAL)</div>
+              <div className="text-[8.5px] font-normal text-slate-700">
+                NF-E {dados.nfe.numero} · PROTOCOLO REG-OFICIAL-001 · PAdES NECAVA 05.591.991/0001-48
+              </div>
+            </div>
+          </div>
+
+          <div className="relative border border-slate-400 rounded-sm px-3 pt-3 pb-2.5 min-h-[58px]">
+            <span className="absolute -top-2 left-2.5 bg-white px-1 text-[8px] font-bold text-slate-700 uppercase">
+              Mensagens DETRAN-CE
+            </span>
+            <div className="font-mono text-[8.5px] text-slate-700 leading-relaxed">
+              VEÍCULO REGISTRADO E LICENCIADO PARA O EXERCÍCIO {exercicioAtual}. VALIDE A
+              AUTENTICIDADE VIA APP VIO (RESOLUÇÃO CONTRAN 809/2020).
+            </div>
+          </div>
+        </div>
+
+        <div className="p-3 sm:p-4 flex flex-col">
+          <div className="relative border border-slate-400 rounded-sm px-3 pt-3 pb-2.5 flex-1 min-h-[138px] flex flex-col justify-between">
+            <span className="absolute -top-2 left-2.5 bg-white px-1 text-[8px] font-bold text-slate-700 uppercase">
+              Informações do Seguro DPVAT
+            </span>
+            <div className="font-mono text-[8.5px] text-slate-700 leading-relaxed">
+              SEGURO OBRIGATÓRIO DPVAT/SPVAT · EXERCÍCIO {exercicioAtual} · SITUAÇÃO REGULAR
+              CONFORME LEGISLAÇÃO VIGENTE.
+            </div>
+            <div className="pt-2 mt-3 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2 text-[8.5px] font-bold text-[#006B3F] uppercase">
+              <span className="inline-flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                Averbado no RENAVAM 01429817451
+              </span>
+              <span className="font-mono text-slate-600">SHA-256 · VIO DETRAN-CE</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgressChange }) {
+  const toast = useToast()
+  const mtlsSectionRef = useRef(null)
+  const mtlsButtonRef = useRef(null)
+  const passo2SectionRef = useRef(null)
+  const passo3SectionRef = useRef(null)
+  const stepRefs = useRef({})
+
   const [dados, setDados] = useState(null)
+  const [erroCarga, setErroCarga] = useState('')
   const [testandoAoVivo, setTestandoAoVivo] = useState(false)
   const [resultadoAoVivo, setResultadoAoVivo] = useState(null)
   const [executandoRito, setExecutandoRito] = useState(false)
   const [etapaAtual, setEtapaAtual] = useState(0)
+  const [acompanharScroll, setAcompanharScroll] = useState(true)
+  const acompanharScrollRef = useRef(true)
   const [concluido, setConcluido] = useState(false)
   const [etapaSelecionada, setEtapaSelecionada] = useState(null)
+  const [abaModalInspecao, setAbaModalInspecao] = useState('ambos')
   const [modalCrlv, setModalCrlv] = useState(false)
-  const [copiado, setCopiado] = useState(false)
+  const [copiado, setCopiado] = useState('')
+  const [mostrarDossieCompleto, setMostrarDossieCompleto] = useState(false)
+  const [mostrarTokenJwt, setMostrarTokenJwt] = useState(false)
+  const [mostrarEtapasBloqueadas, setMostrarEtapasBloqueadas] = useState(false)
+
+  useEffect(() => {
+    acompanharScrollRef.current = acompanharScroll
+  }, [acompanharScroll])
 
   useEffect(() => {
     carregarDados()
   }, [])
 
+  useEffect(() => {
+    if (onProgressChange) {
+      onProgressChange({
+        etapaAtual,
+        executandoRito,
+        concluido,
+        mtlsPendencia: Boolean(resultadoAoVivo && !resultadoAoVivo.sucesso)
+      })
+    }
+  }, [etapaAtual, executandoRito, concluido, resultadoAoVivo, onProgressChange])
+
+  useEffect(() => {
+    if (!executandoRito || !acompanharScroll || etapaAtual < 1) return
+    const targetEl = stepRefs.current[etapaAtual]
+    if (!targetEl) return
+    const prefersReduced =
+      typeof window !== 'undefined' &&
+      window.matchMedia &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    targetEl.scrollIntoView({
+      behavior: prefersReduced ? 'auto' : 'smooth',
+      block: 'center',
+      inline: 'nearest'
+    })
+  }, [etapaAtual, executandoRito, acompanharScroll])
+
   async function carregarDados() {
+    setErroCarga('')
     try {
       const res = await api.get('/oficial/dados')
       setDados(res.data)
     } catch (err) {
       console.error('Erro ao carregar dados oficiais:', err)
+      setErroCarga(err.response?.data?.error || err.message || 'Falha ao carregar dados oficiais.')
     }
   }
 
   async function testarBalcaoWs() {
     setTestandoAoVivo(true)
-    setResultadoAoVivo(null)
     try {
       const res = await api.post('/oficial/testar-balcaows')
       setResultadoAoVivo(res.data)
-      if (res.data?.sucesso && onAtualizarDashboard) {
-        onAtualizarDashboard()
+      if (res.data?.sucesso) {
+        toast.success(
+          'mTLS Connection Established',
+          `Sessão biométrica JWT autenticada no BalcãoWS (HTTP ${res.data.status || 200}). Passo 2 liberado.`
+        )
+        if (onAtualizarDashboard) onAtualizarDashboard()
+      } else {
+        toast.error(
+          'Pendência mTLS BalcãoWS',
+          res.data?.motivo || `HTTP ${res.data?.status || 400}`
+        )
       }
     } catch (err) {
+      const motivo = err.response?.data?.error || err.message
       setResultadoAoVivo({
         sucesso: false,
-        status: 502,
-        motivo: err.response?.data?.error || err.message,
+        status: err.response?.status || 502,
+        motivo,
         diagnostico: 'Falha de comunicação ou timeout no endpoint do BalcãoWS.'
       })
+      toast.error('Falha de Comunicação mTLS', motivo)
     } finally {
       setTestandoAoVivo(false)
     }
@@ -56,21 +564,52 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard }) {
 
   async function iniciarRitoVisual() {
     if (executandoRito) return
+    if (!resultadoAoVivo?.sucesso) {
+      toast.error(
+        'Passo 1 Obrigatório',
+        'Autentique a conexão mTLS e a sessão biométrica no Passo 1 antes de iniciar o rito.'
+      )
+      irParaPasso(mtlsSectionRef, () => mtlsButtonRef.current?.focus())
+      return
+    }
+
     setExecutandoRito(true)
     setConcluido(false)
     setEtapaAtual(1)
 
+    const stepDelayMs = 1000
+
     for (let i = 1; i <= 15; i++) {
       setEtapaAtual(i)
-      await new Promise(r => setTimeout(r, 280))
+      await new Promise((r) => setTimeout(r, stepDelayMs))
     }
 
     try {
       await api.post('/oficial/executar-15-etapas')
       if (onAtualizarDashboard) onAtualizarDashboard()
       setConcluido(true)
+      toast.success(
+        '1º Registro Concluído (15/15 Etapas)',
+        'Placa NEV1A26 averbada no RENAVAM 01429817451. Cédula CRLV-e disponível no Passo 3.'
+      )
+      if (acompanharScrollRef.current) {
+        setTimeout(() => {
+          if (!acompanharScrollRef.current) return
+          passo3SectionRef.current?.scrollIntoView({
+            behavior:
+              typeof window !== 'undefined' &&
+              window.matchMedia &&
+              window.matchMedia('(prefers-reduced-motion: reduce)').matches
+                ? 'auto'
+                : 'smooth',
+            block: 'start'
+          })
+        }, 520)
+      }
     } catch (err) {
       console.error(err)
+      setEtapaAtual(0)
+      toast.error('Erro no Rito de 15 Etapas', err.response?.data?.mensagem || err.message)
     } finally {
       setExecutandoRito(false)
     }
@@ -83,72 +622,501 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard }) {
     setModalCrlv(false)
   }
 
-  function copiarJson(obj) {
-    navigator.clipboard.writeText(JSON.stringify(obj, null, 2))
-    setCopiado(true)
-    setTimeout(() => setCopiado(false), 2000)
+  function copiarTexto(valor, chave = 'req') {
+    const conteudo = typeof valor === 'string' ? valor : JSON.stringify(valor, null, 2)
+    navigator.clipboard.writeText(conteudo)
+    setCopiado(chave)
+    toast.success('Conteúdo Copiado', 'Informação copiada para a área de transferência.')
+    setTimeout(() => setCopiado(''), 1800)
+  }
+
+  function irParaPasso(ref, afterScroll) {
+    if (ref?.current) {
+      ref.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+    if (afterScroll) {
+      setTimeout(afterScroll, 280)
+    }
+  }
+
+  if (erroCarga && !dados) {
+    return (
+      <div className="rounded-xl bg-[var(--bg-surface)] border border-[var(--semantic-danger-border)] p-8 text-center space-y-3">
+        <AlertCircle className="w-7 h-7 text-[var(--semantic-danger-text)] mx-auto" />
+        <div className="text-sm font-semibold text-[var(--text-primary)]">
+          Falha ao carregar o processo oficial
+        </div>
+        <p className="text-xs text-[var(--text-muted)] font-mono">{erroCarga}</p>
+        <button
+          type="button"
+          onClick={carregarDados}
+          className="px-4 py-2 rounded-lg bg-[var(--btn-secondary-bg)] hover:bg-[var(--btn-secondary-hover)] border border-[var(--btn-secondary-border)] text-xs font-semibold text-[var(--btn-secondary-text)] cursor-pointer transition-colors"
+        >
+          Tentar novamente
+        </button>
+      </div>
+    )
   }
 
   if (!dados) {
     return (
-      <div className="p-8 text-center text-slate-400">
-        <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-emerald-400" />
-        Carregando dados oficiais do DETRAN-CE...
+      <div className="space-y-6 animate-pulse">
+        <div className="h-24 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)]" />
+        <div className="h-52 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)]" />
+        <div className="h-44 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)]" />
+        <div className="h-72 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)]" />
       </div>
     )
   }
 
   const etapas = dados.etapasDetalhadas || []
-  const progressoPercentual = Math.round((etapaAtual / 15) * 100)
+  const mtlsAutenticado = Boolean(resultadoAoVivo?.sucesso)
+  const progressoPercentual = concluido ? 100 : Math.round((etapaAtual / 15) * 100)
+
+  const walkthroughSteps = [
+    {
+      num: 'Passo 1',
+      title: 'Segurança mTLS & Biometria',
+      statusText: mtlsAutenticado
+        ? 'Sessão JWT ativa'
+        : resultadoAoVivo && !resultadoAoVivo.sucesso
+        ? 'Pendência de retorno'
+        : 'Aguardando verificação',
+      state: mtlsAutenticado ? 'complete' : 'current',
+      onClick: () => irParaPasso(mtlsSectionRef, () => mtlsButtonRef.current?.focus())
+    },
+    {
+      num: 'Passo 2',
+      title: 'Rito Operacional (15 Etapas)',
+      statusText: !mtlsAutenticado
+        ? 'Bloqueado até Passo 1'
+        : concluido
+        ? '15/15 etapas averbadas'
+        : executandoRito
+        ? `Executando ${etapaAtual}/15`
+        : 'Liberado para execução',
+      state: concluido ? 'complete' : mtlsAutenticado ? 'current' : 'locked',
+      onClick: () => irParaPasso(passo2SectionRef)
+    },
+    {
+      num: 'Passo 3',
+      title: 'Cédula CRLV-e Digital',
+      statusText: concluido ? 'CRLV-e emitido e assinado' : 'Aguardando conclusão',
+      state: concluido ? 'complete' : 'locked',
+      onClick: () => irParaPasso(passo3SectionRef)
+    }
+  ]
 
   return (
     <div className="space-y-6">
-      {/* BANNER INSTITUCIONAL: DADOS RECEBIDOS DO DETRAN-CE EM 13/11/2026 */}
-      <div className="bg-gradient-to-r from-slate-900 via-slate-900 to-emerald-950/40 border border-emerald-500/30 rounded-2xl p-6 shadow-xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+      {/* FAIXA DE ROTEIRO GUIADO */}
+      <nav
+        aria-label="Roteiro guiado do Primeiro Registro"
+        className="rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] p-3 sm:p-4"
+      >
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+          {walkthroughSteps.map((step, idx) => {
+            const isComplete = step.state === 'complete'
+            const isCurrent = step.state === 'current'
 
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
-          <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-semibold mb-3">
-              <Award className="w-3.5 h-3.5" />
-              ITEM 1 · PRIMEIRO REGISTRO / EMPLACAMENTO · DETRAN-CE
+            return (
+              <button
+                key={step.num}
+                type="button"
+                onClick={step.onClick}
+                className={`text-left px-3.5 py-2.5 rounded-lg border transition-colors duration-200 flex items-center justify-between gap-3 cursor-pointer focus-visible:outline-2 focus-visible:outline-[var(--accent-primary)] ${
+                  isComplete
+                    ? 'bg-[var(--semantic-success-bg)] border-[var(--semantic-success-border)]'
+                    : isCurrent
+                    ? 'bg-[var(--bg-surface-alt)] border-[var(--accent-border)]'
+                    : 'bg-[var(--bg-surface-alt)] border-[var(--border-subtle)] opacity-80'
+                }`}
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <span
+                    className={`w-7 h-7 rounded-lg flex items-center justify-center font-mono text-xs font-bold shrink-0 ${
+                      isComplete
+                        ? 'bg-[var(--accent-primary)] text-[var(--accent-on-primary)]'
+                        : isCurrent
+                        ? 'bg-[var(--accent-soft)] text-[var(--accent-text)] border border-[var(--accent-border)]'
+                        : 'bg-[var(--btn-secondary-bg)] text-[var(--text-muted)] border border-[var(--border-subtle)]'
+                    }`}
+                  >
+                    {isComplete ? (
+                      <Check className="w-4 h-4" />
+                    ) : step.state === 'locked' && idx === 1 ? (
+                      <Lock className="w-3.5 h-3.5" />
+                    ) : (
+                      idx + 1
+                    )}
+                  </span>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5 text-[11px] font-semibold">
+                      <span
+                        className={
+                          isComplete
+                            ? 'text-[var(--semantic-success-text)]'
+                            : isCurrent
+                            ? 'text-[var(--accent-text)]'
+                            : 'text-[var(--text-muted)]'
+                        }
+                      >
+                        {step.num}
+                      </span>
+                      <span className="text-[var(--text-subtle)]" aria-hidden="true">
+                        ·
+                      </span>
+                      <span className="font-mono truncate tabular-nums text-[var(--text-secondary)]">
+                        {step.statusText}
+                      </span>
+                    </div>
+                    <div className="text-xs font-bold text-[var(--text-primary)] truncate">
+                      {step.title}
+                    </div>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-[var(--text-muted)] shrink-0" />
+              </button>
+            )
+          })}
+        </div>
+      </nav>
+
+      {/* DOSSIÊ EXECUTIVO COMPACTO DO VEÍCULO HOMOLOGADO */}
+      <section className="rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] p-5 sm:p-6 space-y-4">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="text-xs text-[var(--accent-text)] font-medium">
+              Item 1 · Primeiro Registro / Emplacamento 0km · DETRAN-CE (Seção 3.2)
             </div>
-            <h2 className="text-2xl lg:text-3xl font-black text-white tracking-tight flex items-center gap-3">
-              {dados.veiculo.marca} {dados.veiculo.modelo} · {dados.veiculo.anoModelo}
+            <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-[var(--text-primary)]">
+              {dados.veiculo.marca} {dados.veiculo.modelo}{' '}
+              <span className="text-[var(--text-muted)] font-semibold tabular-nums">
+                · {dados.veiculo.anoFabricacao}/{dados.veiculo.anoModelo}
+              </span>
             </h2>
-            <p className="text-xs lg:text-sm text-slate-300 mt-1 max-w-2xl">
-              Dados oficiais disponibilizados pela Comissão do DETRAN/CE em 13/11/2026 para execução dos testes de integração do Item 1 da PoC.
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => setMostrarDossieCompleto((prev) => !prev)}
+              aria-expanded={mostrarDossieCompleto}
+              className="px-3.5 py-2 rounded-lg bg-[var(--btn-secondary-bg)] hover:bg-[var(--btn-secondary-hover)] border border-[var(--btn-secondary-border)] text-xs font-semibold text-[var(--btn-secondary-text)] flex items-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap"
+            >
+              <span>{mostrarDossieCompleto ? 'Ocultar ficha' : 'Ficha completa (NF-e)'}</span>
+              {mostrarDossieCompleto ? (
+                <ChevronUp className="w-3.5 h-3.5" />
+              ) : (
+                <ChevronDown className="w-3.5 h-3.5" />
+              )}
+            </button>
+
+            <a
+              href={dados.nfe.danfePdfUrl || '/downloads/DANFE_TESTE_DETRAN_CE.pdf'}
+              download="DANFE_TESTE_DETRAN_CE.pdf"
+              className="px-4 py-2 rounded-lg bg-[var(--btn-secondary-bg)] hover:bg-[var(--btn-secondary-hover)] border border-[var(--btn-secondary-border)] text-xs font-semibold text-[var(--btn-secondary-text)] flex items-center gap-2 transition-colors whitespace-nowrap shrink-0"
+            >
+              <FileText className="w-4 h-4 text-[var(--semantic-info-text)]" />
+              Baixar DANFE (.PDF)
+            </a>
+          </div>
+        </div>
+
+        {/* Faixa Resumo de Dados-Chave (4 campos essenciais) */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-3 border-t border-[var(--border-subtle)] text-xs">
+          <div className="px-3 py-2 rounded-lg bg-[var(--bg-surface-alt)] border border-[var(--border-subtle)]">
+            <div className="text-[11px] text-[var(--text-muted)]">Placa Oficial</div>
+            <div className="font-mono font-bold text-[var(--semantic-success-text)] tabular-nums mt-0.5">
+              {dados.veiculo.placaAtribuida || 'NEV1A26'}
+            </div>
+          </div>
+          <div className="px-3 py-2 rounded-lg bg-[var(--bg-surface-alt)] border border-[var(--border-subtle)]">
+            <div className="text-[11px] text-[var(--text-muted)]">Chassi (VIN)</div>
+            <div className="font-mono font-semibold text-[var(--text-primary)] truncate tabular-nums mt-0.5">
+              {dados.veiculo.chassi}
+            </div>
+          </div>
+          <div className="px-3 py-2 rounded-lg bg-[var(--bg-surface-alt)] border border-[var(--border-subtle)]">
+            <div className="text-[11px] text-[var(--text-muted)]">RENAVAM / CLA</div>
+            <div className="font-mono font-semibold text-[var(--text-primary)] truncate tabular-nums mt-0.5">
+              01429817451 · 98412847192
+            </div>
+          </div>
+          <div className="px-3 py-2 rounded-lg bg-[var(--bg-surface-alt)] border border-[var(--border-subtle)]">
+            <div className="text-[11px] text-[var(--text-muted)]">Adquirente ({dados.adquirente.cpf})</div>
+            <div className="font-semibold text-[var(--text-primary)] truncate mt-0.5">
+              {dados.adquirente.nome}
+            </div>
+          </div>
+        </div>
+
+        {/* Detalhes completos sob demanda */}
+        {mostrarDossieCompleto && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 divide-y lg:divide-y-0 lg:divide-x divide-[var(--border-subtle)] border-t border-[var(--border-subtle)] pt-4">
+            <div className="pb-4 lg:pb-0 lg:pr-6 space-y-2">
+              <div className="flex items-center gap-2 text-xs font-semibold text-[var(--semantic-success-text)]">
+                <Car className="w-4 h-4" /> Especificação Veicular
+              </div>
+              <dl className="grid grid-cols-[96px_1fr] gap-y-1.5 text-xs">
+                <dt className="text-[var(--text-muted)]">Cor / Tipo</dt>
+                <dd className="text-[var(--text-secondary)]">
+                  {dados.veiculo.cor} · {dados.veiculo.tipo}
+                </dd>
+                <dt className="text-[var(--text-muted)]">Motorização</dt>
+                <dd className="text-[var(--text-secondary)]">
+                  {dados.veiculo.potencia} · {dados.veiculo.combustivel}
+                </dd>
+              </dl>
+            </div>
+
+            <div className="py-4 lg:py-0 lg:px-6 space-y-2">
+              <div className="flex items-center justify-between text-xs font-semibold text-[var(--semantic-info-text)]">
+                <span className="flex items-center gap-2">
+                  <FileText className="w-4 h-4" /> Nota Fiscal (DANFE)
+                </span>
+                <span className="font-mono text-[11px] text-[var(--text-secondary)] tabular-nums">
+                  {dados.nfe.valor || 'R$ 95.000,00'}
+                </span>
+              </div>
+              <dl className="grid grid-cols-[88px_1fr] gap-y-1.5 text-xs">
+                <dt className="text-[var(--text-muted)]">NF-e / Série</dt>
+                <dd className="font-mono text-[var(--text-primary)] tabular-nums">
+                  {dados.nfe.numero} · Série {dados.nfe.serie} ({dados.nfe.dataEmissao})
+                </dd>
+                <dt className="text-[var(--text-muted)]">Emitente</dt>
+                <dd className="text-[var(--text-secondary)] truncate">{dados.nfe.emitente.razaoSocial}</dd>
+                <dt className="text-[var(--text-muted)]">Chave 44d</dt>
+                <dd
+                  className="font-mono text-[11px] text-[var(--semantic-success-text)] truncate tabular-nums"
+                  title={dados.nfe.chaveAcesso}
+                >
+                  {dados.nfe.chaveAcesso}
+                </dd>
+              </dl>
+            </div>
+
+            <div className="pt-4 lg:pt-0 lg:pl-6 space-y-2">
+              <div className="flex items-center gap-2 text-xs font-semibold text-[var(--semantic-warning-text)]">
+                <ShieldCheck className="w-4 h-4" /> Domicílio &amp; Categoria
+              </div>
+              <dl className="grid grid-cols-[88px_1fr] gap-y-1.5 text-xs">
+                <dt className="text-[var(--text-muted)]">Nascimento</dt>
+                <dd className="font-mono text-[var(--text-secondary)] tabular-nums">
+                  {dados.adquirente.dataNascimento}
+                </dd>
+                <dt className="text-[var(--text-muted)]">Domicílio</dt>
+                <dd className="text-[var(--text-secondary)] truncate">{dados.adquirente.endereco}</dd>
+                <dt className="text-[var(--text-muted)]">Categoria</dt>
+                <dd className="text-[var(--text-secondary)]">Particular · 0km</dd>
+              </dl>
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* PASSO 1 */}
+      <section
+        id="passo-1-mtls"
+        ref={mtlsSectionRef}
+        className={`scroll-mt-20 rounded-xl bg-[var(--bg-surface)] border p-6 space-y-5 transition-colors duration-200 ${
+          mtlsAutenticado
+            ? 'border-[var(--semantic-success-border)]'
+            : 'border-[var(--accent-border)]'
+        }`}
+      >
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="space-y-1.5">
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <span className="font-mono font-bold text-[var(--semantic-info-text)]">Passo 1 de 3</span>
+              <span className="text-[var(--text-subtle)]" aria-hidden="true">
+                ·
+              </span>
+              <span
+                className={`font-semibold ${
+                  mtlsAutenticado
+                    ? 'text-[var(--semantic-success-text)]'
+                    : 'text-[var(--text-secondary)]'
+                }`}
+              >
+                {mtlsAutenticado ? 'Autenticado (HTTP 200)' : 'Pré-requisito obrigatório de segurança'}
+              </span>
+            </div>
+            <h3 className="text-lg font-bold text-[var(--text-primary)] flex items-center gap-2">
+              <Lock
+                className={`w-4 h-4 ${
+                  mtlsAutenticado
+                    ? 'text-[var(--semantic-success-text)]'
+                    : 'text-[var(--semantic-info-text)]'
+                }`}
+              />
+              Camada de Segurança mTLS &amp; Sessão Biométrica
+            </h3>
+            <p className="text-xs text-[var(--text-muted)]">
+              Validação ao vivo do certificado e-CNPJ A1 ICP-Brasil da NECAVA e da biometria facial no endpoint{' '}
+              <span className="font-mono text-[var(--text-secondary)]">
+                https://balcaows.detran.ce.gov.br/balcaows_dev
+              </span>
+              .
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <a
-              href={dados.nfe.danfePdfUrl}
-              download="DANFE_OFICIAL_DETRAN_CE.pdf"
-              className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold text-white flex items-center gap-2 shadow-lg transition-all"
-            >
-              <FileText className="w-4 h-4 text-emerald-400" />
-              Baixar DANFE (.PDF Oficial)
-            </a>
+          <button
+            ref={mtlsButtonRef}
+            type="button"
+            onClick={testarBalcaoWs}
+            disabled={testandoAoVivo}
+            className={`px-5 py-2.5 rounded-lg text-xs font-bold flex items-center gap-2 cursor-pointer transition-colors duration-200 whitespace-nowrap shrink-0 self-start lg:self-auto ${
+              mtlsAutenticado
+                ? 'bg-[var(--btn-secondary-bg)] hover:bg-[var(--btn-secondary-hover)] border border-[var(--btn-secondary-border)] text-[var(--semantic-success-text)]'
+                : 'bg-sky-600 hover:bg-sky-500 disabled:opacity-60 text-white'
+            }`}
+          >
+            <RefreshCw className={`w-4 h-4 ${testandoAoVivo ? 'animate-spin' : ''}`} />
+            {testandoAoVivo
+              ? 'Autenticando mTLS...'
+              : mtlsAutenticado
+              ? 'Revalidar BalcãoWS (mTLS)'
+              : 'Executar Verificação BalcãoWS (mTLS)'}
+          </button>
+        </div>
+
+        {resultadoAoVivo?.sucesso && (
+          <div className="p-3.5 rounded-xl bg-[var(--semantic-success-bg)] border border-[var(--semantic-success-border)] flex flex-col gap-3 text-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+              <div className="flex items-center gap-2 font-semibold text-[var(--semantic-success-text)]">
+                <span className="relative flex h-2.5 w-2.5 shrink-0" aria-hidden="true">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[var(--semantic-success-text)]" />
+                </span>
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                <span>
+                  e-CNPJ A1 ICP-Brasil + Biometria validados · Passo 2 desbloqueado
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setMostrarTokenJwt((prev) => !prev)}
+                  className="px-2.5 py-1.5 rounded-md bg-[var(--bg-surface)] hover:bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] text-[11px] font-medium text-[var(--text-secondary)] flex items-center gap-1 cursor-pointer transition-colors"
+                >
+                  {mostrarTokenJwt ? <EyeOff className="w-3.5 h-3.5" /> : <KeyRound className="w-3.5 h-3.5" />}
+                  {mostrarTokenJwt ? 'Ocultar JWT' : 'Ver JWT'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => copiarTexto(resultadoAoVivo.token, 'jwt')}
+                  className="px-3 py-1.5 rounded-md bg-[var(--bg-surface)] hover:bg-[var(--bg-surface-hover)] border border-[var(--semantic-success-border)] text-[11px] font-mono text-[var(--semantic-success-text)] flex items-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap"
+                >
+                  {copiado === 'jwt' ? <CheckCheck className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copiado === 'jwt' ? 'Copiado' : 'Copiar Token JWT'}
+                </button>
+              </div>
+            </div>
+
+            {mostrarTokenJwt && (
+              <div className="font-mono text-[11px] bg-[var(--bg-console)] border border-[var(--border-subtle)] px-3 py-2 rounded-lg text-emerald-300 break-all">
+                Bearer {resultadoAoVivo.token}
+              </div>
+            )}
+          </div>
+        )}
+
+        {resultadoAoVivo && !resultadoAoVivo.sucesso && (
+          <div className="p-4 rounded-xl bg-[var(--semantic-warning-bg)] border border-[var(--semantic-warning-border)] text-xs space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2 font-bold text-[var(--semantic-warning-text)]">
+                <ShieldAlert className="w-4 h-4 shrink-0" />
+                <span>Pendência na Autenticação mTLS junto ao Serviço de Identidade DETRAN-CE</span>
+              </div>
+              <span className="font-mono text-[11px] text-[var(--semantic-warning-text)] tabular-nums">
+                HTTP {resultadoAoVivo.status}
+              </span>
+            </div>
+            <div className="bg-[var(--bg-console)] p-3 rounded-lg font-mono text-[11px] text-red-300 border border-red-900/40">
+              {resultadoAoVivo.motivo}
+            </div>
+            <p className="text-[11px] text-[var(--text-secondary)]">
+              O Passo 2 permanece bloqueado até que o endpoint do BalcãoWS confirme a sessão biométrica e
+              retorne um Bearer Token JWT válido.
+            </p>
+          </div>
+        )}
+      </section>
+
+      {/* PASSO 2: RITO DAS 15 ETAPAS (LINHA DO TEMPO VERTICAL) */}
+      <section
+        id="passo-2-rito"
+        ref={passo2SectionRef}
+        className={`scroll-mt-20 rounded-xl bg-[var(--bg-surface)] border p-6 space-y-5 transition-colors duration-200 ${
+          concluido ? 'border-[var(--semantic-success-border)]' : 'border-[var(--border-subtle)]'
+        }`}
+      >
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-[var(--border-subtle)]">
+          <div className="space-y-1">
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <span className="font-mono font-bold text-[var(--accent-text)]">Passo 2 de 3</span>
+              <span className="text-[var(--text-subtle)]" aria-hidden="true">
+                ·
+              </span>
+              <span className="text-[var(--text-muted)]">
+                Clique em qualquer etapa para inspecionar os payloads BalcãoWS
+              </span>
+            </div>
+            <h3 className="text-lg font-bold text-[var(--text-primary)]">
+              Rito Operacional das 15 Etapas Oficiais (I a XV)
+            </h3>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+            {mtlsAutenticado && (
+              <button
+                type="button"
+                role="switch"
+                aria-checked={acompanharScroll}
+                onClick={() => setAcompanharScroll((prev) => !prev)}
+                title="Acompanhar automaticamente com scroll suave conforme cada etapa avança"
+                className={`px-3 py-2 rounded-lg border text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap shrink-0 ${
+                  acompanharScroll
+                    ? 'bg-[var(--accent-soft)] border-[var(--accent-border)] text-[var(--accent-text)]'
+                    : 'bg-[var(--btn-secondary-bg)] border-[var(--btn-secondary-border)] text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+                }`}
+              >
+                <ArrowDown className={`w-3.5 h-3.5 ${executandoRito && acompanharScroll ? 'animate-bounce' : ''}`} />
+                <span>Auto-Scroll: {acompanharScroll ? 'ON' : 'OFF'}</span>
+              </button>
+            )}
 
             {concluido ? (
               <button
+                type="button"
                 onClick={reiniciarRito}
-                className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-xs font-bold text-slate-200 flex items-center gap-2 cursor-pointer transition-all"
+                className="px-4 py-2 rounded-lg bg-[var(--btn-secondary-bg)] hover:bg-[var(--btn-secondary-hover)] border border-[var(--btn-secondary-border)] text-xs font-semibold text-[var(--semantic-warning-text)] flex items-center gap-2 cursor-pointer transition-colors whitespace-nowrap shrink-0"
               >
-                <RotateCcw className="w-4 h-4 text-amber-400" />
+                <RotateCcw className="w-4 h-4" />
                 Reiniciar Rito
               </button>
             ) : (
               <button
+                type="button"
                 onClick={iniciarRitoVisual}
-                disabled={executandoRito}
-                className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-xs font-bold text-white flex items-center gap-2 shadow-lg shadow-emerald-600/30 cursor-pointer transition-all"
+                disabled={!mtlsAutenticado || executandoRito}
+                className={`px-5 py-2.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-colors whitespace-nowrap shrink-0 ${
+                  !mtlsAutenticado
+                    ? 'bg-[var(--btn-secondary-bg)] border border-[var(--border-subtle)] text-[var(--text-muted)] cursor-not-allowed'
+                    : 'bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] disabled:opacity-60 text-[var(--accent-on-primary)] cursor-pointer'
+                }`}
               >
-                {executandoRito ? (
+                {!mtlsAutenticado ? (
+                  <>
+                    <Lock className="w-4 h-4" />
+                    Aguardando Passo 1 (mTLS)
+                  </>
+                ) : executandoRito ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin" />
-                    Processando Etapa {etapaAtual}/15...
+                    <span className="tabular-nums">Executando Etapa {etapaAtual}/15...</span>
                   </>
                 ) : (
                   <>
@@ -161,455 +1129,427 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard }) {
           </div>
         </div>
 
-        {/* CARDS COM DETALHES DO VEÍCULO, NOTA FISCAL E ADQUIRENTE */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 pt-6 border-t border-slate-800/80 relative z-10 text-xs">
-          {/* Card Veículo */}
-          <div className="bg-slate-950/60 border border-slate-800 p-4 rounded-xl space-y-2">
-            <div className="flex items-center justify-between text-slate-400 font-semibold border-b border-slate-800 pb-2">
-              <span className="flex items-center gap-1.5 text-emerald-400">
-                <Car className="w-4 h-4" /> Veículo Homologado
-              </span>
-              <span className="font-mono text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-300">0 km</span>
-            </div>
-            <div className="space-y-1 font-mono text-[11px]">
-              <div><span className="text-slate-500">Chassi:</span> <span className="text-white font-bold">{dados.veiculo.chassi}</span></div>
-              <div><span className="text-slate-500">Motor:</span> <span className="text-slate-300">{dados.veiculo.motor}</span></div>
-              <div><span className="text-slate-500">Cor / Tipo:</span> <span className="text-slate-300">{dados.veiculo.cor} · {dados.veiculo.tipo}</span></div>
-              <div><span className="text-slate-500">Potência:</span> <span className="text-slate-300">{dados.veiculo.potencia} ({dados.veiculo.combustivel})</span></div>
-            </div>
-          </div>
-
-          {/* Card NF-e */}
-          <div className="bg-slate-950/60 border border-slate-800 p-4 rounded-xl space-y-2">
-            <div className="flex items-center justify-between text-slate-400 font-semibold border-b border-slate-800 pb-2">
-              <span className="flex items-center gap-1.5 text-sky-400">
-                <FileText className="w-4 h-4" /> Nota Fiscal Eletrônica
-              </span>
-              <span className="font-mono text-[10px] bg-sky-950/50 border border-sky-800/50 text-sky-300 px-2 py-0.5 rounded">R$ 95.000,00</span>
-            </div>
-            <div className="space-y-1 font-mono text-[11px]">
-              <div><span className="text-slate-500">NF-e Nº:</span> <span className="text-white">{dados.nfe.numero} · Série {dados.nfe.serie}</span></div>
-              <div><span className="text-slate-500">Emissão:</span> <span className="text-slate-300">{dados.nfe.dataEmissao}</span></div>
-              <div><span className="text-slate-500">Emitente:</span> <span className="text-slate-300">{dados.nfe.emitente.razaoSocial}</span></div>
-              <div className="truncate"><span className="text-slate-500">Chave:</span> <span className="text-emerald-300 text-[10px]">{dados.nfe.chaveAcesso}</span></div>
-            </div>
-          </div>
-
-          {/* Card Adquirente */}
-          <div className="bg-slate-950/60 border border-slate-800 p-4 rounded-xl space-y-2">
-            <div className="flex items-center justify-between text-slate-400 font-semibold border-b border-slate-800 pb-2">
-              <span className="flex items-center gap-1.5 text-amber-400">
-                <ShieldCheck className="w-4 h-4" /> Adquirente Vinculado
-              </span>
-              <span className="font-mono text-[10px] bg-amber-950/50 border border-amber-800/50 text-amber-300 px-2 py-0.5 rounded">Destinatário</span>
-            </div>
-            <div className="space-y-1 font-mono text-[11px]">
-              <div><span className="text-slate-500">Nome:</span> <span className="text-white font-bold">{dados.adquirente.nome}</span></div>
-              <div><span className="text-slate-500">CPF:</span> <span className="text-slate-300">{dados.adquirente.cpf}</span></div>
-              <div><span className="text-slate-500">Nascimento:</span> <span className="text-slate-300">{dados.adquirente.dataNascimento}</span></div>
-              <div className="truncate"><span className="text-slate-500">Localidade:</span> <span className="text-slate-300">{dados.adquirente.endereco}</span></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* PAINEL DE CONEXÃO AO VIVO BALCÃOWS DETRAN-CE & DIAGNÓSTICO */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
-          <div>
-            <h3 className="text-base font-bold text-white flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5 text-emerald-400" />
-              Conexão mTLS com BalcãoWS (Homologação DETRAN-CE)
-            </h3>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Endpoint oficial: <span className="font-mono text-slate-300">https://balcaows.detran.ce.gov.br/balcaows_dev</span>
-            </p>
-          </div>
-
-          <button
-            onClick={testarBalcaoWs}
-            disabled={testandoAoVivo}
-            className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-xs font-bold text-white flex items-center gap-2 cursor-pointer shadow-lg shadow-indigo-600/20 transition-all self-start sm:self-auto"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${testandoAoVivo ? 'animate-spin' : ''}`} />
-            {testandoAoVivo ? 'Processando Requisição mTLS...' : 'Executar Verificação BalcãoWS (mTLS)'}
-          </button>
-        </div>
-
-        {/* STATUS / RETORNO DA CHAMADA AO VIVO */}
-        {resultadoAoVivo && (
-          <div className="mt-4">
-            {resultadoAoVivo.sucesso ? (
-              <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs space-y-2">
-                <div className="flex items-center gap-2 font-bold text-sm">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                  Sessão Biométrica Autenticada com Sucesso
+        {!mtlsAutenticado && (
+          <div className="p-4 rounded-xl bg-[var(--semantic-warning-bg)] border border-[var(--semantic-warning-border)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start sm:items-center gap-3">
+              <Lock className="w-5 h-5 text-[var(--semantic-warning-text)] shrink-0 mt-0.5 sm:mt-0" />
+              <div className="space-y-0.5">
+                <div className="text-xs font-bold text-[var(--semantic-warning-text)]">
+                  Passo 2 bloqueado até conclusão do Passo 1 (Segurança mTLS)
                 </div>
-                <p>O Serviço de Identidade do DETRAN-CE validou a biometria e o token Bearer está ativo para consumo dos demais endpoints.</p>
-                <div className="font-mono text-[10px] bg-slate-950 p-2 rounded truncate">
-                  Token: {resultadoAoVivo.token}
-                </div>
-              </div>
-            ) : (
-              <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 font-bold text-sm text-amber-300">
-                    <ShieldAlert className="w-5 h-5 text-amber-400" />
-                    Detran-CE: Pendência de Cadastro de Sigla no Serviço de Identidade
-                  </div>
-                  <span className="font-mono text-[10px] bg-amber-950 px-2.5 py-1 rounded text-amber-300 border border-amber-700/50">
-                    HTTP {resultadoAoVivo.status}
-                  </span>
-                </div>
-
-                <div className="bg-slate-950 p-3 rounded-lg font-mono text-[11px] text-red-300 border border-red-900/40">
-                  {resultadoAoVivo.motivo}
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-[11px] text-slate-300 pt-2 border-t border-amber-500/20">
-                  <div>
-                    <span className="font-semibold text-amber-300 block">Diagnóstico de Engenharia:</span>
-                    O BalcãoWS recebeu o e-CNPJ da NECAVA e a foto facial do adquirente, mas o Serviço de Identidade interno do Ceará não possui a sigla cadastrada no ambiente dev.
-                  </div>
-                  <div>
-                    <span className="font-semibold text-amber-300 block">Protocolo de Notificação:</span>
-                    Chamado técnico oficial protocolado via e-mail para <span className="font-mono text-emerald-300">atendimento@detran.ce.gov.br</span> com cópia à comissão técnica em 13/11/2026.
-                  </div>
-                  <div>
-                    <span className="font-semibold text-amber-300 block">Amparo no Edital / Manual:</span>
-                    Itens 2.1.4, 2.1.5 e 2.1.8 (autorizam a demonstração em contingência/simulação em caso de indisponibilidade de microsserviço governamental).
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* RITO DAS 15 ETAPAS DO PRIMEIRO REGISTRO (ITEM 3.2 DO MANUAL) */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4 mb-4">
-          <div>
-            <h3 className="text-base font-bold text-white flex items-center gap-2">
-              <Award className="w-5 h-5 text-emerald-400" />
-              Execução do Rito de Primeiro Registro · 15 Etapas Oficiais (Manual DETRAN-CE)
-            </h3>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Protocolo: <span className="font-mono text-emerald-400 font-bold">REG-OFICIAL-001</span> · Placa Atribuída: <span className="font-mono text-white font-bold bg-slate-800 px-2 py-0.5 rounded">NEV1A26</span>
-              <span className="ml-2 text-slate-500">· (Clique em qualquer etapa para inspecionar o JSON de envio e retorno)</span>
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <span className="text-xs font-mono text-slate-400">Progresso:</span>
-            <div className="w-32 bg-slate-950 rounded-full h-2.5 overflow-hidden border border-slate-800">
-              <div
-                className="bg-emerald-500 h-2.5 transition-all duration-300 rounded-full"
-                style={{ width: `${progressoPercentual}%` }}
-              />
-            </div>
-            <span className="text-xs font-mono font-bold text-emerald-400">{progressoPercentual}%</span>
-          </div>
-        </div>
-
-        {/* BANNER DE SUCESSO QUANDO FINALIZA */}
-        {concluido && (
-          <div className="mb-4 p-4 rounded-xl bg-gradient-to-r from-emerald-950/80 to-slate-900 border border-emerald-500/40 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
-                <Sparkles className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="text-sm font-bold text-white">Rito de Primeiro Emplacamento Concluído</h4>
-                <p className="text-xs text-slate-300">CRLV-e averbado no RENAVAM, assinado com e-CNPJ da NECAVA e registrado no Blockchain SHA-256.</p>
-              </div>
-            </div>
-            <button
-              onClick={() => setModalCrlv(true)}
-              className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white shadow-lg cursor-pointer"
-            >
-              Visualizar CRLV-e Emitido
-            </button>
-          </div>
-        )}
-
-        {/* LISTA PROGRESSIVA DAS 15 ETAPAS (CLICÁVEIS PARA INSPEÇÃO TÉCNICA) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {etapas.map((item) => {
-            const isConcluido = etapaAtual >= item.etapa || concluido
-            const isProcessando = etapaAtual === item.etapa && executandoRito
-
-            return (
-              <div
-                key={item.etapa}
-                onClick={() => setEtapaSelecionada(item)}
-                className={`p-3.5 rounded-xl border transition-all duration-300 cursor-pointer group ${
-                  isConcluido
-                    ? 'bg-slate-950/90 border-emerald-500/40 shadow-sm shadow-emerald-500/10 hover:border-emerald-400'
-                    : isProcessando
-                    ? 'bg-indigo-950/60 border-indigo-500/70 shadow-md shadow-indigo-500/20 scale-[1.02]'
-                    : 'bg-slate-950/30 border-slate-800/50 opacity-40 hover:opacity-75'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className={`font-semibold text-xs ${isConcluido ? 'text-white' : isProcessando ? 'text-indigo-200' : 'text-slate-400'}`}>
-                    {item.nome}
-                  </span>
-                  {isConcluido ? (
-                    <span className="flex items-center gap-1 font-mono text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30">
-                      <Check className="w-3 h-3" /> Concluído
-                    </span>
-                  ) : isProcessando ? (
-                    <span className="flex items-center gap-1 font-mono text-[10px] text-indigo-300 bg-indigo-500/20 px-2 py-0.5 rounded border border-indigo-500/40 animate-pulse">
-                      <RefreshCw className="w-2.5 h-2.5 animate-spin" /> Executando
-                    </span>
-                  ) : (
-                    <span className="font-mono text-[10px] text-slate-500 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
-                      Aguardando
-                    </span>
-                  )}
-                </div>
-                <p className={`text-[11px] leading-tight ${isConcluido ? 'text-slate-300' : 'text-slate-500'}`}>
-                  {item.desc}
+                <p className="text-xs text-[var(--text-secondary)]">
+                  Autentique o certificado e-CNPJ e a sessão biométrica JWT no Passo 1 para liberar a
+                  execução sequencial das 15 etapas.
                 </p>
-                <div className="mt-2 flex items-center justify-between font-mono text-[9px] text-slate-500">
-                  <span className="truncate">{item.endpoint}</span>
-                  <span className="text-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-                    <Code2 className="w-3 h-3" /> Ver JSON
-                  </span>
-                </div>
               </div>
-            )
-          })}
-        </div>
-
-        {/* RODAPÉ DO PROCESSO: DISPONIBILIZAÇÃO DO CRLV-e E TERMO PAdES */}
-        <div className="mt-6 pt-6 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3 text-xs text-slate-400">
-            <QrCode className="w-8 h-8 text-emerald-400 bg-slate-950 p-1 rounded-lg border border-slate-800" />
-            <div>
-              <p className="text-white font-bold">CRLV-e Digital e Termo de Autorização Disponíveis</p>
-              <p className="text-[11px]">Assinado institucionalmente com e-CNPJ A1 ICP-Brasil (NECAVA) · SHA-256</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setMostrarEtapasBloqueadas((prev) => !prev)}
+                className="px-3 py-2 rounded-lg bg-[var(--bg-surface)] hover:bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] text-xs font-medium text-[var(--text-secondary)] cursor-pointer transition-colors whitespace-nowrap"
+              >
+                {mostrarEtapasBloqueadas ? 'Ocultar prévia' : 'Ver prévia das 15 etapas'}
+              </button>
+              <button
+                type="button"
+                onClick={() => irParaPasso(mtlsSectionRef, () => mtlsButtonRef.current?.focus())}
+                className="px-3.5 py-2 rounded-lg bg-[var(--bg-surface)] hover:bg-[var(--bg-surface-hover)] border border-[var(--semantic-warning-border)] text-xs font-semibold text-[var(--semantic-warning-text)] flex items-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap"
+              >
+                <ArrowUp className="w-3.5 h-3.5" />
+                Ir para Passo 1
+              </button>
             </div>
           </div>
+        )}
 
-          <div className="flex items-center gap-2">
-            <a
-              href="/downloads/DANFE_TESTE_DETRAN_CE.pdf"
-              download="DANFE_TESTE_DETRAN_CE.pdf"
-              className="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5"
-            >
-              <Download className="w-3.5 h-3.5" /> DANFE (.PDF)
-            </a>
-            <button
-              onClick={() => setModalCrlv(true)}
-              className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-lg shadow-emerald-600/20"
-            >
-              <FileText className="w-3.5 h-3.5" /> Visualizar CRLV-e Digital
-            </button>
+        {/* Linha do Tempo Vertical Sequencial (exibida ao autenticar ou quando usuário abre a prévia) */}
+        {(mtlsAutenticado || mostrarEtapasBloqueadas) && (
+          <div className="relative pl-10 sm:pl-12 space-y-2.5">
+            <div
+              aria-hidden="true"
+              className="absolute left-[15px] sm:left-[19px] top-4 bottom-4 w-0.5 bg-[var(--border-subtle)] pointer-events-none"
+            />
+            <div
+              aria-hidden="true"
+              className="absolute left-[15px] sm:left-[19px] top-4 w-0.5 bg-[var(--accent-primary)] transition-all duration-300 pointer-events-none"
+              style={{
+                height:
+                  etapas.length > 0
+                    ? `calc(${progressoPercentual}% - ${progressoPercentual > 0 ? 16 : 0}px)`
+                    : '0%'
+              }}
+            />
+
+            {etapas.map((item, idx) => {
+              const isConcluido =
+                concluido ||
+                etapaAtual > item.etapa ||
+                (etapaAtual === item.etapa && !executandoRito && etapaAtual > 0)
+              const isProcessando = executandoRito && etapaAtual === item.etapa
+              const romano = ROMAN_NUMERALS[idx] || String(item.etapa)
+
+              return (
+                <div
+                  key={item.etapa}
+                  ref={(el) => {
+                    if (el) {
+                      stepRefs.current[item.etapa] = el
+                    } else {
+                      delete stepRefs.current[item.etapa]
+                    }
+                  }}
+                  className="relative scroll-mt-24"
+                >
+                  <div
+                    aria-hidden="true"
+                    className={`absolute -left-10 sm:-left-12 top-3 w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 flex items-center justify-center font-mono text-[11px] font-bold transition-colors duration-200 ${
+                      isConcluido
+                        ? 'bg-[var(--accent-primary)] border-[var(--accent-border)] text-[var(--accent-on-primary)]'
+                        : isProcessando
+                        ? 'bg-sky-600 border-sky-400 text-white'
+                        : 'bg-[var(--bg-surface-alt)] border-[var(--border-strong)] text-[var(--text-muted)]'
+                    }`}
+                  >
+                    {isConcluido ? (
+                      <Check className="w-4 h-4" />
+                    ) : isProcessando ? (
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      romano
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAbaModalInspecao('ambos')
+                      setEtapaSelecionada(item)
+                    }}
+                    title={`Inspecionar ${item.metodo} ${item.endpoint}`}
+                    className={`w-full text-left px-4 py-3 rounded-xl border transition-all duration-200 cursor-pointer group focus-visible:outline-2 focus-visible:outline-[var(--accent-primary)] ${
+                      isConcluido
+                        ? 'bg-[var(--bg-surface-alt)] border-[var(--semantic-success-border)]'
+                        : isProcessando
+                        ? 'bg-[var(--semantic-info-bg)] border-[var(--semantic-info-border)] ring-2 ring-[var(--semantic-info-border)]'
+                        : !mtlsAutenticado
+                        ? 'bg-[var(--bg-surface-alt)] border-[var(--border-subtle)] opacity-80'
+                        : 'bg-[var(--bg-surface-alt)] border-[var(--border-subtle)] hover:border-[var(--border-strong)]'
+                    }`}
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-sm font-semibold truncate text-[var(--text-primary)]">
+                          {item.nome}
+                        </span>
+                        <span className="font-mono text-[10px] text-[var(--text-muted)] tabular-nums shrink-0">
+                          ({String(item.etapa).padStart(2, '0')}/15)
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-3 shrink-0">
+                        <span className="opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity text-[11px] font-mono text-[var(--accent-text)] hidden sm:inline-flex items-center gap-1">
+                          <Code2 className="w-3.5 h-3.5" /> {item.metodo} · JSON
+                        </span>
+
+                        {isConcluido ? (
+                          <span className="flex items-center gap-1 font-mono text-[11px] font-semibold text-[var(--semantic-success-text)]">
+                            <CheckCircle2 className="w-3.5 h-3.5" /> Concluído
+                          </span>
+                        ) : isProcessando ? (
+                          <span className="flex items-center gap-1 font-mono text-[11px] font-semibold text-[var(--semantic-info-text)]">
+                            <RefreshCw className="w-3 h-3 animate-spin" /> Processando
+                          </span>
+                        ) : (
+                          <span className="font-mono text-[11px] text-[var(--text-muted)]">
+                            {mtlsAutenticado ? 'Pendente' : 'Aguardando mTLS'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <p className="text-xs text-[var(--text-secondary)] mt-1 leading-relaxed">
+                      {item.desc}
+                    </p>
+                  </button>
+                </div>
+              )
+            })}
           </div>
-        </div>
-      </div>
+        )}
+      </section>
 
-      {/* MODAL DE INSPEÇÃO TÉCNICA DETALHADA DO ENDPOINT (JSON ENVIADO E RETORNADO) */}
-      {etapaSelecionada && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-3xl w-full p-6 space-y-4 shadow-2xl relative max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs">
-                  {etapaSelecionada.etapa}
-                </div>
-                <div>
-                  <h3 className="font-bold text-sm text-white">{etapaSelecionada.nome}</h3>
-                  <p className="text-[11px] font-mono text-emerald-400">{etapaSelecionada.metodo} {etapaSelecionada.endpoint}</p>
-                </div>
+      {/* PASSO 3: CONCLUSÃO & CRLV-e */}
+      <section
+        id="passo-3-crlv"
+        ref={passo3SectionRef}
+        className={`scroll-mt-20 rounded-xl bg-[var(--bg-surface)] border p-6 space-y-5 transition-colors duration-200 ${
+          concluido ? 'border-[var(--semantic-success-border)]' : 'border-[var(--border-subtle)]'
+        }`}
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <span className="font-mono font-bold text-[var(--accent-text)]">Passo 3 de 3</span>
+              <span className="text-[var(--text-subtle)]" aria-hidden="true">
+                ·
+              </span>
+              <span className="font-mono text-[var(--text-muted)]">Resolução CONTRAN 809/2020</span>
+            </div>
+            <h3 className="text-lg font-bold text-[var(--text-primary)]">
+              Conclusão &amp; Cédula do CRLV-e Digital Oficial
+            </h3>
+          </div>
+
+          {concluido && (
+            <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+              <button
+                type="button"
+                onClick={() => setModalCrlv(true)}
+                className="px-4 py-2 rounded-lg bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] text-xs font-bold text-[var(--accent-on-primary)] flex items-center gap-2 cursor-pointer transition-colors whitespace-nowrap"
+              >
+                <Eye className="w-4 h-4" />
+                Visualizar CRLV-e Emitido
+              </button>
+              <a
+                href="/downloads/CRLV_NEV1A26_OFICIAL.pdf"
+                download="CRLV_NEV1A26_OFICIAL.pdf"
+                className="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-xs font-bold text-white flex items-center gap-2 transition-colors whitespace-nowrap"
+              >
+                <Download className="w-4 h-4" />
+                Baixar PDF Assinado (PAdES)
+              </a>
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="px-4 py-2 rounded-lg bg-[var(--btn-secondary-bg)] hover:bg-[var(--btn-secondary-hover)] border border-[var(--btn-secondary-border)] text-xs font-semibold text-[var(--btn-secondary-text)] flex items-center gap-2 cursor-pointer transition-colors whitespace-nowrap"
+              >
+                <Printer className="w-4 h-4" />
+                Imprimir CRLV-e
+              </button>
+            </div>
+          )}
+        </div>
+
+        {!concluido ? (
+          <div className="p-4 rounded-xl bg-[var(--bg-surface-alt)] border border-[var(--border-subtle)] text-xs text-[var(--text-muted)]">
+            Cédula CRLV-e Digital com QR Code VIO e assinatura PAdES será exibida automaticamente após a conclusão da Etapa XV.
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="px-4 py-3 rounded-xl bg-[var(--semantic-success-bg)] border border-[var(--semantic-success-border)] flex items-center gap-3">
+              <CheckCircle2 className="w-5 h-5 text-[var(--semantic-success-text)] shrink-0" />
+              <div className="text-xs">
+                <span className="font-bold text-[var(--text-primary)]">
+                  Primeiro Registro Concluído (15/15 Etapas BalcãoWS)
+                </span>
+                <span className="text-[var(--text-secondary)]">
+                  {' '}— Placa{' '}
+                  <strong className="font-mono text-[var(--semantic-success-text)]">NEV1A26</strong> · RENAVAM{' '}
+                  <span className="font-mono">01429817451</span> · CLA{' '}
+                  <span className="font-mono">98412847192</span> · Ledger SHA-256 atualizado.
+                </span>
               </div>
-              <button onClick={() => setEtapaSelecionada(null)} className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"><X className="w-4 h-4" /></button>
+            </div>
+
+            <div className="max-w-4xl mx-auto">
+              <CrlvDocumentCard dados={dados} printable={!modalCrlv} />
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* MODAL DE INSPEÇÃO TÉCNICA BALCÃOWS */}
+      {etapaSelecionada && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Inspeção técnica ${etapaSelecionada.nome}`}
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+        >
+          <div className="bg-[var(--bg-modal)] border border-[var(--border-strong)] rounded-xl max-w-3xl w-full p-6 space-y-4 shadow-2xl max-h-[90vh] flex flex-col">
+            <div className="flex items-start justify-between gap-4 border-b border-[var(--border-subtle)] pb-3">
+              <div className="space-y-1 min-w-0">
+                <div className="text-xs font-mono text-[var(--semantic-success-text)]">
+                  Etapa {ROMAN_NUMERALS[etapaSelecionada.etapa - 1] || etapaSelecionada.etapa} ({etapaSelecionada.etapa} de 15) · Inspeção BalcãoWS
+                </div>
+                <h3 className="font-bold text-base text-[var(--text-primary)] truncate">
+                  {etapaSelecionada.nome}
+                </h3>
+                <p className="text-xs font-mono text-[var(--semantic-info-text)] truncate">
+                  {etapaSelecionada.metodo} {etapaSelecionada.endpoint}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEtapaSelecionada(null)}
+                aria-label="Fechar modal"
+                className="text-[var(--text-muted)] hover:text-[var(--text-primary)] p-1.5 rounded-lg hover:bg-[var(--bg-surface-hover)] cursor-pointer transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-1 p-1 bg-[var(--bg-surface-alt)] border border-[var(--border-subtle)] rounded-lg self-start">
+              {[
+                { id: 'ambos', label: 'Visão Completa' },
+                { id: 'mtls', label: 'Camada mTLS' },
+                { id: 'req', label: 'Request JSON' },
+                { id: 'res', label: 'Response JSON' }
+              ].map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setAbaModalInspecao(t.id)}
+                  className={`px-3 py-1 rounded-md text-xs font-medium cursor-pointer transition-colors whitespace-nowrap ${
+                    abaModalInspecao === t.id
+                      ? 'bg-[var(--accent-primary)] text-[var(--accent-on-primary)]'
+                      : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
             </div>
 
             <div className="flex-1 overflow-y-auto space-y-4 pr-1 text-xs font-mono">
-              {/* CABEÇALHOS DE SEGURANÇA */}
-              <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1">
-                <span className="text-[10px] text-slate-500 uppercase tracking-widest block font-sans font-bold">Camada de Segurança mTLS & Token</span>
-                <div className="text-slate-300">mTLS: <span className="text-emerald-400">e-CNPJ A1 ICP-Brasil (NECAVA - CNPJ 05.591.991/0001-48)</span></div>
-                <div className="text-slate-300">Authorization: <span className="text-sky-400">Bearer &lt;token_jwt_sessao_biometrica&gt;</span></div>
-                <div className="text-slate-300">Content-Type: <span className="text-slate-400">application/json</span></div>
-              </div>
-
-              {/* PAYLOAD DE REQUISIÇÃO (ENVIADO) */}
-              <div className="space-y-1">
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-slate-400 font-sans font-bold flex items-center gap-1.5">
-                    <ArrowRight className="w-3.5 h-3.5 text-sky-400" /> Request Payload (JSON de Envio ao BalcãoWS)
-                  </span>
-                  <button
-                    onClick={() => copiarJson(etapaSelecionada.payloadReq)}
-                    className="text-slate-400 hover:text-white flex items-center gap-1 text-[10px] cursor-pointer"
-                  >
-                    {copiado ? <CheckCheck className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />} Copiar
-                  </button>
+              {(abaModalInspecao === 'ambos' || abaModalInspecao === 'mtls') && (
+                <div className="bg-[var(--bg-console)] p-3.5 rounded-lg border border-[var(--border-subtle)] space-y-1.5 text-slate-200">
+                  <div className="text-[11px] text-slate-400 font-sans font-semibold">
+                    Headers de Segurança mTLS &amp; Bearer Token
+                  </div>
+                  <div>
+                    Certificado Cliente:{' '}
+                    <span className="text-emerald-400">e-CNPJ A1 ICP-Brasil (NECAVA · 05.591.991/0001-48)</span>
+                  </div>
+                  <div className="truncate">
+                    Authorization:{' '}
+                    <span className="text-sky-400">
+                      Bearer {resultadoAoVivo?.token || '<token_jwt_sessao_biometrica>'}
+                    </span>
+                  </div>
+                  <div>
+                    Content-Type: <span className="text-slate-400">application/json; charset=utf-8</span>
+                  </div>
                 </div>
-                <pre className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 text-sky-300 text-[11px] overflow-x-auto leading-relaxed">
-                  {JSON.stringify(etapaSelecionada.payloadReq, null, 2)}
-                </pre>
-              </div>
+              )}
 
-              {/* PAYLOAD DE RESPOSTA (RETORNADO) */}
-              <div className="space-y-1">
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-slate-400 font-sans font-bold flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Response Body (JSON Retornado pelo DETRAN-CE)
-                  </span>
-                  <span className="text-emerald-400 text-[10px] bg-emerald-950 px-2 py-0.5 rounded border border-emerald-800">
-                    HTTP 200 OK
-                  </span>
+              {(abaModalInspecao === 'ambos' || abaModalInspecao === 'req') && (
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[var(--text-primary)] font-sans font-semibold flex items-center gap-1.5">
+                      <ArrowRight className="w-3.5 h-3.5 text-[var(--semantic-info-text)]" /> Payload Enviado (Request Body)
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => copiarTexto(etapaSelecionada.payloadReq, 'req')}
+                      className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] flex items-center gap-1 text-[11px] font-sans cursor-pointer"
+                    >
+                      {copiado === 'req' ? (
+                        <CheckCheck className="w-3.5 h-3.5 text-[var(--semantic-success-text)]" />
+                      ) : (
+                        <Copy className="w-3.5 h-3.5" />
+                      )}
+                      {copiado === 'req' ? 'Copiado' : 'Copiar JSON'}
+                    </button>
+                  </div>
+                  <pre className="bg-[var(--bg-console)] p-3.5 rounded-lg border border-[var(--border-subtle)] text-sky-300 text-[11px] overflow-x-auto leading-relaxed">
+                    {JSON.stringify(etapaSelecionada.payloadReq, null, 2)}
+                  </pre>
                 </div>
-                <pre className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 text-emerald-300 text-[11px] overflow-x-auto leading-relaxed">
-                  {JSON.stringify(etapaSelecionada.payloadRes, null, 2)}
-                </pre>
-              </div>
+              )}
+
+              {(abaModalInspecao === 'ambos' || abaModalInspecao === 'res') && (
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[var(--text-primary)] font-sans font-semibold flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-[var(--semantic-success-text)]" /> Resposta Oficial DETRAN-CE (Response Body)
+                    </span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-[var(--semantic-success-text)] text-[11px] font-mono">
+                        HTTP 200 OK
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => copiarTexto(etapaSelecionada.payloadRes, 'res')}
+                        className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] flex items-center gap-1 text-[11px] font-sans cursor-pointer"
+                      >
+                        {copiado === 'res' ? (
+                          <CheckCheck className="w-3.5 h-3.5 text-[var(--semantic-success-text)]" />
+                        ) : (
+                          <Copy className="w-3.5 h-3.5" />
+                        )}
+                        {copiado === 'res' ? 'Copiado' : 'Copiar JSON'}
+                      </button>
+                    </div>
+                  </div>
+                  <pre className="bg-[var(--bg-console)] p-3.5 rounded-lg border border-[var(--border-subtle)] text-emerald-300 text-[11px] overflow-x-auto leading-relaxed">
+                    {JSON.stringify(etapaSelecionada.payloadRes, null, 2)}
+                  </pre>
+                </div>
+              )}
             </div>
 
-            <div className="pt-3 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
-              <span>Evidência registrada no Blockchain Ledger SHA-256</span>
+            <div className="pt-3 border-t border-[var(--border-subtle)] flex items-center justify-between text-xs text-[var(--text-muted)]">
+              <span>Evidência gravada no Ledger SHA-256</span>
               <button
+                type="button"
                 onClick={() => setEtapaSelecionada(null)}
-                className="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-semibold cursor-pointer"
+                className="px-4 py-1.5 rounded-lg bg-[var(--btn-secondary-bg)] hover:bg-[var(--btn-secondary-hover)] border border-[var(--btn-secondary-border)] text-[var(--btn-secondary-text)] font-semibold cursor-pointer transition-colors"
               >
-                Fechar Inspeção
+                Fechar
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* MODAL DO CRLV-e DIGITAL OFICIAL (PADRÃO CONTRAN 809/2020) */}
+      {/* MODAL AMPLIADO CRLV-e */}
       {modalCrlv && (
-        <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full p-4 sm:p-6 space-y-4 shadow-2xl relative my-auto">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                <h3 className="font-bold text-sm text-white">Certificado de Registro e Licenciamento de Veículo Digital (CRLV-e)</h3>
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="CRLV-e Digital Oficial"
+          className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto"
+        >
+          <div className="bg-[var(--bg-modal)] border border-[var(--border-strong)] rounded-xl max-w-4xl w-full p-5 sm:p-6 space-y-4 shadow-2xl my-auto">
+            <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-3">
+              <div>
+                <h3 className="font-bold text-sm text-[var(--text-primary)]">
+                  Certificado de Registro e Licenciamento de Veículo Digital (CRLV-e)
+                </h3>
+                <p className="text-[11px] text-[var(--text-muted)] font-mono">
+                  Resolução CONTRAN 809/2020 · Governo do Estado do Ceará · DETRAN-CE
+                </p>
               </div>
               <button
+                type="button"
                 onClick={() => setModalCrlv(false)}
-                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+                aria-label="Fechar CRLV-e"
+                className="text-[var(--text-muted)] hover:text-[var(--text-primary)] p-1.5 rounded-lg hover:bg-[var(--bg-surface-hover)] cursor-pointer transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* DOCUMENTO OFICIAL CRLV-e (PADRÃO CONTRAN / SENATRAN / DETRAN-CE) */}
-            <div className="bg-white text-slate-900 rounded-xl border-2 border-[#006B3F] p-4 sm:p-5 space-y-4 shadow-lg">
-              {/* CABEÇALHO OFICIAL */}
-              <div className="border-b-2 border-[#006B3F] pb-3 text-center space-y-1">
-                <div className="flex items-center justify-center gap-3 mb-1">
-                  <div className="w-8 h-8 rounded-full bg-[#006B3F] text-white flex items-center justify-center font-black text-xs">
-                    BR
-                  </div>
-                  <div className="text-left">
-                    <div className="text-[10px] font-black tracking-widest text-[#006B3F] uppercase">República Federativa do Brasil</div>
-                    <div className="text-[9px] font-semibold text-slate-600 uppercase">Ministério dos Transportes · SENATRAN</div>
-                  </div>
-                </div>
-                <div className="text-xs font-black text-slate-900 uppercase tracking-tight">
-                  DETRAN/CE — Departamento Estadual de Trânsito do Ceará
-                </div>
-                <div className="text-[11px] font-bold text-[#006B3F] bg-emerald-50 py-0.5 rounded border border-emerald-200 uppercase tracking-wide">
-                  Certificado de Registro e Licenciamento de Veículo Digital — CRLV-e
-                </div>
-              </div>
+            <CrlvDocumentCard dados={dados} printable={modalCrlv} />
 
-              {/* GRID DE CAMPOS OFICIAIS */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10px] font-mono">
-                <div className="border border-slate-300 p-1.5 rounded bg-slate-50">
-                  <div className="text-[9px] text-slate-500 font-sans font-bold">CÓD. SEGURANÇA CLA</div>
-                  <div className="font-bold text-slate-900">98412847192</div>
-                </div>
-                <div className="border border-slate-300 p-1.5 rounded bg-slate-50">
-                  <div className="text-[9px] text-slate-500 font-sans font-bold">NÚMERO DO CRV</div>
-                  <div className="font-bold text-slate-900">01429817451</div>
-                </div>
-                <div className="border border-slate-300 p-1.5 rounded bg-slate-50">
-                  <div className="text-[9px] text-slate-500 font-sans font-bold">RENAVAM</div>
-                  <div className="font-bold text-slate-900">01429817451</div>
-                </div>
-                <div className="border border-slate-300 p-1.5 rounded bg-slate-50">
-                  <div className="text-[9px] text-slate-500 font-sans font-bold">PLACA MERCOSUL</div>
-                  <div className="font-black text-emerald-800 text-xs">NEV1A26</div>
-                </div>
-
-                <div className="col-span-2 border border-slate-300 p-1.5 rounded bg-slate-50">
-                  <div className="text-[9px] text-slate-500 font-sans font-bold">CHASSI (VIN)</div>
-                  <div className="font-bold text-slate-900">{dados.veiculo.chassi}</div>
-                </div>
-                <div className="col-span-2 border border-slate-300 p-1.5 rounded bg-slate-50">
-                  <div className="text-[9px] text-slate-500 font-sans font-bold">MARCA / MODELO / VERSÃO</div>
-                  <div className="font-bold text-slate-900">{dados.veiculo.marca} {dados.veiculo.modelo}</div>
-                </div>
-
-                <div className="border border-slate-300 p-1.5 rounded bg-slate-50">
-                  <div className="text-[9px] text-slate-500 font-sans font-bold">ANO FAB / MODELO</div>
-                  <div className="font-bold text-slate-900">{dados.veiculo.anoFabricacao} / {dados.veiculo.anoModelo}</div>
-                </div>
-                <div className="border border-slate-300 p-1.5 rounded bg-slate-50">
-                  <div className="text-[9px] text-slate-500 font-sans font-bold">COR PREDOMINANTE</div>
-                  <div className="font-bold text-slate-900">{dados.veiculo.cor}</div>
-                </div>
-                <div className="border border-slate-300 p-1.5 rounded bg-slate-50">
-                  <div className="text-[9px] text-slate-500 font-sans font-bold">COMBUSTÍVEL</div>
-                  <div className="font-bold text-slate-900">{dados.veiculo.combustivel}</div>
-                </div>
-                <div className="border border-slate-300 p-1.5 rounded bg-slate-50">
-                  <div className="text-[9px] text-slate-500 font-sans font-bold">CATEGORIA</div>
-                  <div className="font-bold text-slate-900">PARTICULAR</div>
-                </div>
-
-                <div className="col-span-3 border border-slate-300 p-1.5 rounded bg-slate-50">
-                  <div className="text-[9px] text-slate-500 font-sans font-bold">NOME DO PROPRIETÁRIO ADQUIRENTE</div>
-                  <div className="font-bold text-slate-900 uppercase">{dados.adquirente.nome}</div>
-                </div>
-                <div className="border border-slate-300 p-1.5 rounded bg-slate-50">
-                  <div className="text-[9px] text-slate-500 font-sans font-bold">CPF / CNPJ</div>
-                  <div className="font-bold text-slate-900">{dados.adquirente.cpf}</div>
-                </div>
-              </div>
-
-              {/* RODAPÉ DO DOCUMENTO COM QR CODE E CHAVE ICP-BRASIL */}
-              <div className="pt-2 border-t border-slate-300 flex items-center justify-between gap-4">
-                <div className="space-y-1 text-[9px] text-slate-600 max-w-sm">
-                  <div className="font-bold text-[#006B3F] uppercase flex items-center gap-1">
-                    <ShieldCheck className="w-3.5 h-3.5" /> Averbado no Sistema de Trânsito · 1º Registro Concluído
-                  </div>
-                  <div>Localidade / Emissão: <strong>FORTALEZA - CE · {new Date().toLocaleDateString('pt-BR')}</strong></div>
-                  <div>Assinado digitalmente via <strong>PAdES (e-CNPJ ICP-Brasil NECAVA 05.591.991/0001-48)</strong>.</div>
-                </div>
-                <div className="flex flex-col items-center bg-slate-50 border border-slate-300 p-2 rounded shrink-0">
-                  <QrCode className="w-12 h-12 text-slate-900" />
-                  <span className="text-[8px] font-bold text-slate-500 font-mono mt-0.5">DETRAN-CE</span>
-                </div>
-              </div>
-            </div>
-
-            {/* BOTÕES DE AÇÃO */}
-            <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-              <span className="text-[11px] text-slate-400">
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+              <span className="text-xs text-[var(--text-muted)]">
                 Homologação DETRAN/CE · Item 1 da Prova de Conceito
               </span>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <a
                   href="/downloads/CRLV_NEV1A26_OFICIAL.pdf"
                   download="CRLV_NEV1A26_OFICIAL.pdf"
-                  className="px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-emerald-700/20 cursor-pointer"
+                  className="px-4 py-2 rounded-lg bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] text-[var(--accent-on-primary)] font-semibold text-xs flex items-center gap-1.5 transition-colors whitespace-nowrap"
                 >
                   <Download className="w-3.5 h-3.5" /> Baixar PDF Assinado (PAdES)
                 </a>
                 <button
                   type="button"
                   onClick={() => window.print()}
-                  className="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs flex items-center gap-1.5 cursor-pointer"
+                  className="px-4 py-2 rounded-lg bg-[var(--btn-secondary-bg)] hover:bg-[var(--btn-secondary-hover)] border border-[var(--btn-secondary-border)] text-[var(--btn-secondary-text)] font-semibold text-xs flex items-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap"
                 >
                   <Printer className="w-3.5 h-3.5" /> Imprimir CRLV-e
                 </button>
