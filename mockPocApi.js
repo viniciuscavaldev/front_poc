@@ -448,6 +448,14 @@ export function pocCeMockApiPlugin() {
         const pathname = parsed.pathname.replace(/\/+$/, '') || '/'
         const method = (req.method || 'GET').toUpperCase()
 
+        if (method === 'GET' && (pathname === '/health' || pathname === '')) {
+          return sendJson(res, 200, {
+            status: 'ok',
+            uptime: Math.round(process.uptime ? process.uptime() : 10),
+            timestamp: new Date().toISOString()
+          })
+        }
+
         if (method === 'GET' && pathname === '/status-mtls') {
           return sendJson(res, 200, {
             mtlsConectado: true,
@@ -753,13 +761,55 @@ export function pocCeMockApiPlugin() {
     })
   }
 
+  function attachWebSocketHeartbeat(httpServer) {
+    if (!httpServer) return
+    httpServer.on('upgrade', (req, socket) => {
+      if (!req.url?.startsWith('/api/poc-ce/ws')) return
+      const key = req.headers['sec-websocket-key']
+      if (!key) {
+        socket.destroy()
+        return
+      }
+      const accept = crypto
+        .createHash('sha1')
+        .update(`${key}258EAFA5-E914-47DA-95CA-C5AB0DC85B11`)
+        .digest('base64')
+
+      socket.write(
+        'HTTP/1.1 101 Switching Protocols\r\n' +
+          'Upgrade: websocket\r\n' +
+          'Connection: Upgrade\r\n' +
+          `Sec-WebSocket-Accept: ${accept}\r\n\r\n`
+      )
+
+      const sendFrame = (obj) => {
+        if (socket.destroyed) return
+        const payload = Buffer.from(JSON.stringify(obj), 'utf-8')
+        const len = payload.length
+        const header = len < 126 ? Buffer.from([0x81, len]) : Buffer.from([0x81, 126, (len >> 8) & 0xff, len & 0xff])
+        socket.write(Buffer.concat([header, payload]))
+      }
+
+      sendFrame({ type: 'connected', ts: new Date().toISOString() })
+      const interval = setInterval(() => {
+        sendFrame({ type: 'heartbeat', ts: new Date().toISOString() })
+      }, 15000)
+
+      socket.on('close', () => clearInterval(interval))
+      socket.on('end', () => clearInterval(interval))
+      socket.on('error', () => clearInterval(interval))
+    })
+  }
+
   return {
     name: 'poc-ce-mock-api',
     configureServer(server) {
       attachMiddleware(server.middlewares)
+      attachWebSocketHeartbeat(server.httpServer)
     },
     configurePreviewServer(server) {
       attachMiddleware(server.middlewares)
+      attachWebSocketHeartbeat(server.httpServer)
     }
   }
 }
