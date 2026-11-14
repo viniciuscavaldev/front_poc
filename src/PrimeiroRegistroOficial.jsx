@@ -26,7 +26,9 @@ import {
   ChevronDown,
   ChevronUp,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  HelpCircle,
+  Sparkles
 } from 'lucide-react'
 import { useToast } from './ToastContext'
 
@@ -468,6 +470,13 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
   const passo2SectionRef = useRef(null)
   const passo3SectionRef = useRef(null)
   const stepRefs = useRef({})
+  const ritoButtonRef = useRef(null)
+  const step1CardRef = useRef(null)
+  const crlvButtonRef = useRef(null)
+
+  const [tourAtivo, setTourAtivo] = useState(false)
+  const [tourPasso, setTourPasso] = useState(1)
+  const [spotlightRect, setSpotlightRect] = useState(null)
 
   const [dados, setDados] = useState(null)
   const [erroCarga, setErroCarga] = useState('')
@@ -520,6 +529,122 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
     })
   }, [etapaAtual, executandoRito, acompanharScroll])
 
+  const TOUR_STEPS = [
+    {
+      step: 1,
+      title: 'Autenticação mTLS & Biometria Facial',
+      desc: 'Para iniciar o processo de Primeiro Emplacamento, clique neste botão para abrir o canal seguro mTLS com o BalcãoWS do DETRAN-CE e autenticar a biometria facial do adquirente.',
+      completedDesc: 'Canal seguro mTLS estabelecido com sucesso e sessão biométrica JWT ativa. Você pode revalidar ou seguir para a execução do rito.',
+      actionLabel: 'Executar Verificação BalcãoWS (mTLS)',
+      stepNum: 'Passo 1 de 4'
+    },
+    {
+      step: 2,
+      title: 'Execução do Rito Operacional (15 Etapas)',
+      desc: 'Excelente! O token biométrico do Estado está ativo. Agora clique aqui para processar em tempo real as 15 etapas de averbação veicular exigidas pelo Manual do DETRAN-CE.',
+      completedDesc: 'Rito operacional de 15 etapas concluído e averbado com sucesso no RENAVAM.',
+      actionLabel: 'Executar Rito Operacional (15 Etapas)',
+      stepNum: 'Passo 2 de 4'
+    },
+    {
+      step: 3,
+      title: 'Auditoria Técnica do BalcãoWS',
+      desc: 'A transparência é total. Clique em qualquer etapa da linha do tempo para abrir o modal de inspeção e auditar os payloads JSON enviados e recebidos do DETRAN-CE.',
+      completedDesc: 'Inspeção técnica dos payloads de requisição e resposta concluída com sucesso.',
+      actionLabel: 'Inspecionar Etapa 1 na Linha do Tempo',
+      stepNum: 'Passo 3 de 4'
+    },
+    {
+      step: 4,
+      title: 'Emissão e Impressão do CRLV-e Digital',
+      desc: 'Parabéns! O veículo foi homologado e registrado. Clique aqui para conferir a cédula oficial do CRLV-e emitida com QR Code VIO e assinatura digital ICP-Brasil da NECAVA.',
+      completedDesc: 'Documento oficial do CRLV-e emitido de acordo com a Resolução CONTRAN 809/2020.',
+      actionLabel: 'Visualizar CRLV-e Emitido',
+      stepNum: 'Passo 4 de 4'
+    }
+  ]
+
+  function getTourTarget(passo) {
+    if (passo === 1) return mtlsButtonRef.current
+    if (passo === 2) return ritoButtonRef.current
+    if (passo === 3) return step1CardRef.current || stepRefs.current[1]
+    if (passo === 4) return crlvButtonRef.current || passo3SectionRef.current
+    return null
+  }
+
+  function iniciarTour() {
+    setTourAtivo(true)
+    if (!resultadoAoVivo?.sucesso) {
+      setTourPasso(1)
+    } else if (!concluido) {
+      setTourPasso(2)
+    } else {
+      setTourPasso(1)
+    }
+    toast.info(
+      '🎯 Modo Guia Interativo Ativado',
+      'Siga o holofote verde nos botões para conduzir a homologação oficial da PoC.'
+    )
+  }
+
+  function encerrarTour() {
+    setTourAtivo(false)
+    toast.info('Guia Interativo Encerrado', 'Você pode reativar o guia a qualquer momento pelo botão no topo.')
+  }
+
+  function concluirTour() {
+    setTourAtivo(false)
+    toast.success(
+      '🎉 Parabéns! Guia Concluído',
+      'Você passou por todos os 4 passos da homologação do 1º Registro no padrão DETRAN-CE.'
+    )
+  }
+
+  function fecharModalInspecao() {
+    setEtapaSelecionada(null)
+    if (tourAtivo && tourPasso === 3) {
+      setTimeout(() => {
+        setTourPasso(4)
+        toast.success(
+          'Passo 3 Concluído!',
+          'Auditoria conferida. Agora veja e imprima a cédula oficial do CRLV-e no Passo 4.'
+        )
+      }, 350)
+    }
+  }
+
+  useEffect(() => {
+    if (!tourAtivo) {
+      setSpotlightRect(null)
+      return
+    }
+    const el = getTourTarget(tourPasso)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      const timer = setTimeout(() => {
+        const rect = el.getBoundingClientRect()
+        setSpotlightRect(rect)
+      }, 350)
+      return () => clearTimeout(timer)
+    }
+  }, [tourAtivo, tourPasso, concluido, resultadoAoVivo])
+
+  useEffect(() => {
+    if (!tourAtivo) return
+    const handleUpdate = () => {
+      const el = getTourTarget(tourPasso)
+      if (el) {
+        setSpotlightRect(el.getBoundingClientRect())
+      }
+    }
+    window.addEventListener('scroll', handleUpdate, { passive: true })
+    window.addEventListener('resize', handleUpdate, { passive: true })
+    return () => {
+      window.removeEventListener('scroll', handleUpdate)
+      window.removeEventListener('resize', handleUpdate)
+    }
+  }, [tourAtivo, tourPasso])
+
   async function carregarDados() {
     setErroCarga('')
     try {
@@ -542,6 +667,12 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
           `Sessão biométrica JWT autenticada no BalcãoWS (HTTP ${res.data.status || 200}). Passo 2 liberado.`
         )
         if (onAtualizarDashboard) onAtualizarDashboard()
+        if (tourAtivo && tourPasso === 1) {
+          setTimeout(() => {
+            setTourPasso(2)
+            toast.success('Passo 1 do Tour Concluído!', 'mTLS estabelecido. Avançando para o Rito das 15 Etapas.')
+          }, 800)
+        }
       } else {
         toast.error(
           'Pendência mTLS BalcãoWS',
@@ -592,6 +723,15 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
         '1º Registro Concluído (15/15 Etapas)',
         'Placa NEV1A26 averbada no RENAVAM 01429817451. Cédula CRLV-e disponível no Passo 3.'
       )
+      if (tourAtivo && tourPasso === 2) {
+        setTimeout(() => {
+          setTourPasso(3)
+          toast.success(
+            'Passo 2 do Tour Concluído!',
+            '15 etapas averbadas. Agora clique na Etapa I da linha do tempo para auditar os payloads.'
+          )
+        }, 1200)
+      }
       if (acompanharScrollRef.current) {
         setTimeout(() => {
           if (!acompanharScrollRef.current) return
@@ -800,6 +940,25 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
           <div className="flex flex-wrap items-center gap-2.5 shrink-0">
             <button
               type="button"
+              onClick={() => {
+                if (tourAtivo) {
+                  encerrarTour()
+                } else {
+                  iniciarTour()
+                }
+              }}
+              className={`px-3.5 py-2 rounded-lg text-xs font-bold flex items-center gap-2 cursor-pointer transition-all duration-200 whitespace-nowrap shrink-0 shadow-sm ${
+                tourAtivo
+                  ? 'bg-emerald-500 text-slate-950 ring-2 ring-emerald-300 shadow-emerald-500/30'
+                  : 'bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 hover:text-emerald-300 shadow-emerald-950/20'
+              }`}
+            >
+              <HelpCircle className={`w-4 h-4 ${tourAtivo ? 'text-slate-950 animate-pulse' : 'text-emerald-400'}`} />
+              <span>{tourAtivo ? 'Encerrar Guia' : 'Iniciar Guia Interativo'}</span>
+            </button>
+
+            <button
+              type="button"
               onClick={() => setMostrarDossieCompleto((prev) => !prev)}
               aria-expanded={mostrarDossieCompleto}
               className="px-3.5 py-2 rounded-lg bg-[var(--btn-secondary-bg)] hover:bg-[var(--btn-secondary-hover)] border border-[var(--btn-secondary-border)] text-xs font-semibold text-[var(--btn-secondary-text)] flex items-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap"
@@ -966,10 +1125,14 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
             type="button"
             onClick={testarBalcaoWs}
             disabled={testandoAoVivo}
-            className={`px-5 py-2.5 rounded-lg text-xs font-bold flex items-center gap-2 cursor-pointer transition-colors duration-200 whitespace-nowrap shrink-0 self-start lg:self-auto ${
+            className={`px-5 py-2.5 rounded-lg text-xs font-bold flex items-center gap-2 cursor-pointer transition-all duration-200 whitespace-nowrap shrink-0 self-start lg:self-auto ${
               mtlsAutenticado
                 ? 'bg-[var(--btn-secondary-bg)] hover:bg-[var(--btn-secondary-hover)] border border-[var(--btn-secondary-border)] text-[var(--semantic-success-text)]'
                 : 'bg-sky-600 hover:bg-sky-500 disabled:opacity-60 text-white'
+            } ${
+              tourAtivo && tourPasso === 1
+                ? 'relative z-50 ring-4 ring-emerald-400 ring-offset-4 ring-offset-slate-900 shadow-2xl shadow-emerald-500/50 scale-[1.02]'
+                : ''
             }`}
           >
             <RefreshCw className={`w-4 h-4 ${testandoAoVivo ? 'animate-spin' : ''}`} />
@@ -1099,13 +1262,18 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
               </button>
             ) : (
               <button
+                ref={ritoButtonRef}
                 type="button"
                 onClick={iniciarRitoVisual}
                 disabled={!mtlsAutenticado || executandoRito}
-                className={`px-5 py-2.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-colors whitespace-nowrap shrink-0 ${
+                className={`px-5 py-2.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all whitespace-nowrap shrink-0 ${
                   !mtlsAutenticado
                     ? 'bg-[var(--btn-secondary-bg)] border border-[var(--border-subtle)] text-[var(--text-muted)] cursor-not-allowed'
                     : 'bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] disabled:opacity-60 text-[var(--accent-on-primary)] cursor-pointer'
+                } ${
+                  tourAtivo && tourPasso === 2
+                    ? 'relative z-50 ring-4 ring-emerald-400 ring-offset-4 ring-offset-slate-900 shadow-2xl shadow-emerald-500/50 scale-[1.02]'
+                    : ''
                 }`}
               >
                 {!mtlsAutenticado ? (
@@ -1221,6 +1389,7 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
                   </div>
 
                   <button
+                    ref={idx === 0 ? step1CardRef : undefined}
                     type="button"
                     onClick={() => {
                       setAbaModalInspecao('ambos')
@@ -1235,6 +1404,10 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
                         : !mtlsAutenticado
                         ? 'bg-[var(--bg-surface-alt)] border-[var(--border-subtle)] opacity-80'
                         : 'bg-[var(--bg-surface-alt)] border-[var(--border-subtle)] hover:border-[var(--border-strong)]'
+                    } ${
+                      tourAtivo && tourPasso === 3 && idx === 0
+                        ? 'relative z-50 ring-4 ring-emerald-400 ring-offset-4 ring-offset-slate-900 shadow-2xl shadow-emerald-500/50 scale-[1.01]'
+                        : ''
                     }`}
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
@@ -1304,9 +1477,21 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
           {concluido && (
             <div className="flex flex-wrap items-center gap-2.5 shrink-0">
               <button
+                ref={crlvButtonRef}
                 type="button"
-                onClick={() => setModalCrlv(true)}
-                className="px-4 py-2 rounded-lg bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] text-xs font-bold text-[var(--accent-on-primary)] flex items-center gap-2 cursor-pointer transition-colors whitespace-nowrap"
+                onClick={() => {
+                  setModalCrlv(true)
+                  if (tourAtivo && tourPasso === 4) {
+                    setTimeout(() => {
+                      concluirTour()
+                    }, 600)
+                  }
+                }}
+                className={`px-4 py-2 rounded-lg bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] text-xs font-bold text-[var(--accent-on-primary)] flex items-center gap-2 cursor-pointer transition-all whitespace-nowrap ${
+                  tourAtivo && tourPasso === 4
+                    ? 'relative z-50 ring-4 ring-emerald-400 ring-offset-4 ring-offset-slate-900 shadow-2xl shadow-emerald-500/50 scale-[1.02]'
+                    : ''
+                }`}
               >
                 <Eye className="w-4 h-4" />
                 Visualizar CRLV-e Emitido
@@ -1365,7 +1550,10 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
           role="dialog"
           aria-modal="true"
           aria-label={`Inspeção técnica ${etapaSelecionada.nome}`}
-          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[70]"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) fecharModalInspecao()
+          }}
         >
           <div className="bg-[var(--bg-modal)] border border-[var(--border-strong)] rounded-xl max-w-3xl w-full p-6 space-y-4 shadow-2xl max-h-[90vh] flex flex-col">
             <div className="flex items-start justify-between gap-4 border-b border-[var(--border-subtle)] pb-3">
@@ -1382,7 +1570,7 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
               </div>
               <button
                 type="button"
-                onClick={() => setEtapaSelecionada(null)}
+                onClick={fecharModalInspecao}
                 aria-label="Fechar modal"
                 className="text-[var(--text-muted)] hover:text-[var(--text-primary)] p-1.5 rounded-lg hover:bg-[var(--bg-surface-hover)] cursor-pointer transition-colors"
               >
@@ -1558,6 +1746,200 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
           </div>
         </div>
       )}
+      {/* MODO TOUR GUIADO INTERATIVO (SPOTLIGHT / ONBOARDING) */}
+      {tourAtivo && (
+        <>
+          {/* BACKDROP ESCURECIDO COM BLUR SUAVE */}
+          <div
+            className="fixed inset-0 z-40 bg-slate-950/75 backdrop-blur-[2px] transition-opacity duration-300"
+            onClick={() => {
+              toast.info(
+                'Guia Interativo Ativo',
+                'Clique no botão iluminado pelo holofote para continuar a demonstração da PoC.'
+              )
+            }}
+          />
+
+          {/* ANEL PULSANTE DO HOLOFOTE (SPOTLIGHT GLOW) */}
+          {spotlightRect && (
+            <div
+              className="fixed z-50 pointer-events-none transition-all duration-300 rounded-xl"
+              style={{
+                top: Math.max(0, spotlightRect.top - 6),
+                left: Math.max(0, spotlightRect.left - 6),
+                width: spotlightRect.width + 12,
+                height: spotlightRect.height + 12,
+                boxShadow: '0 0 0 3px #10b981, 0 0 35px 8px rgba(16, 185, 129, 0.45)'
+              }}
+            >
+              <span className="absolute -inset-1.5 rounded-xl border-2 border-emerald-400 animate-ping opacity-60" />
+            </div>
+          )}
+
+          {/* BALÃO FLUTUANTE EXPLICATIVO COM SETA/PONTEIRO */}
+          {spotlightRect && (() => {
+            const currentTourStep = TOUR_STEPS[tourPasso - 1] || TOUR_STEPS[0]
+            const balloonWidth =
+              typeof window !== 'undefined' && window.innerWidth < 640
+                ? window.innerWidth - 32
+                : 440
+            const balloonHeight = 240
+            const viewportW = typeof window !== 'undefined' ? window.innerWidth : 1200
+            const viewportH = typeof window !== 'undefined' ? window.innerHeight : 800
+
+            let balloonLeft = spotlightRect.left + spotlightRect.width / 2 - balloonWidth / 2
+            balloonLeft = Math.max(16, Math.min(viewportW - balloonWidth - 16, balloonLeft))
+
+            const spaceBelow = viewportH - spotlightRect.bottom
+            const spaceAbove = spotlightRect.top
+            let balloonTop = 80
+            let arrowPlacement = 'top'
+
+            if (spaceBelow >= balloonHeight + 24) {
+              balloonTop = spotlightRect.bottom + 16
+              arrowPlacement = 'top'
+            } else if (spaceAbove >= balloonHeight + 24) {
+              balloonTop = spotlightRect.top - balloonHeight - 16
+              arrowPlacement = 'bottom'
+            } else {
+              balloonTop = Math.max(16, Math.min(viewportH - balloonHeight - 16, spotlightRect.bottom + 16))
+              arrowPlacement = 'top'
+            }
+
+            const arrowLeft = Math.max(
+              24,
+              Math.min(balloonWidth - 40, spotlightRect.left + spotlightRect.width / 2 - balloonLeft - 7)
+            )
+
+            return (
+              <div
+                className="fixed z-[60] rounded-2xl bg-slate-900 border border-emerald-500/40 p-5 shadow-2xl shadow-black/80 backdrop-blur-md text-white transition-all duration-300"
+                style={{
+                  width: `${balloonWidth}px`,
+                  top: `${balloonTop}px`,
+                  left: `${balloonLeft}px`
+                }}
+              >
+                {/* SETA/PONTEIRO */}
+                <div
+                  className={`absolute w-3.5 h-3.5 bg-slate-900 border-emerald-500/40 rotate-45 ${
+                    arrowPlacement === 'top'
+                      ? '-top-2 border-t border-l'
+                      : '-bottom-2 border-b border-r'
+                  }`}
+                  style={{ left: `${arrowLeft}px` }}
+                />
+
+                {/* CABEÇALHO DO BALÃO */}
+                <div className="flex items-start justify-between gap-3 border-b border-slate-800 pb-3">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-[11px] font-mono font-bold text-emerald-400">
+                        {currentTourStep.stepNum}
+                      </span>
+                      <span className="text-[11px] text-slate-400 font-medium">
+                        Guia Interativo PoC · DETRAN-CE
+                      </span>
+                    </div>
+                    <h4 className="text-sm font-bold text-slate-100 flex items-center gap-1.5">
+                      <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
+                      {currentTourStep.title}
+                    </h4>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={encerrarTour}
+                    aria-label="Pular Guia"
+                    className="text-slate-400 hover:text-slate-200 p-1 rounded-lg hover:bg-slate-800 cursor-pointer transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* CORPO DO BALÃO */}
+                <div className="py-3.5 space-y-2">
+                  <p className="text-xs text-slate-300 leading-relaxed font-sans">
+                    {tourPasso === 1 && mtlsAutenticado
+                      ? currentTourStep.completedDesc
+                      : tourPasso === 2 && concluido
+                      ? currentTourStep.completedDesc
+                      : currentTourStep.desc}
+                  </p>
+
+                  <div className="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800 text-[11px] text-emerald-400 flex items-center gap-2">
+                    <ArrowRight className="w-3.5 h-3.5 shrink-0" />
+                    <span className="font-semibold">Ação necessária:</span>
+                    <span className="text-slate-200 truncate">{currentTourStep.actionLabel}</span>
+                  </div>
+                </div>
+
+                {/* RODAPÉ DO BALÃO: CONTROLES & PAGINAÇÃO */}
+                <div className="flex items-center justify-between gap-3 pt-3 border-t border-slate-800 text-xs">
+                  {/* Bolinhas de Progresso 1..4 */}
+                  <div className="flex items-center gap-1.5">
+                    {[1, 2, 3, 4].map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => setTourPasso(s)}
+                        className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
+                          tourPasso === s
+                            ? 'w-6 bg-emerald-400'
+                            : s < tourPasso
+                            ? 'w-2 bg-emerald-600/70 hover:bg-emerald-500'
+                            : 'w-2 bg-slate-700 hover:bg-slate-600'
+                        }`}
+                        title={`Ir para o Passo ${s}`}
+                      />
+                    ))}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={encerrarTour}
+                      className="px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 font-medium transition-colors cursor-pointer text-xs"
+                    >
+                      Pular Guia
+                    </button>
+
+                    {tourPasso > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => setTourPasso((p) => Math.max(1, p - 1))}
+                        className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium transition-colors cursor-pointer text-xs"
+                      >
+                        Anterior
+                      </button>
+                    )}
+
+                    {tourPasso < 4 ? (
+                      <button
+                        type="button"
+                        onClick={() => setTourPasso((p) => Math.min(4, p + 1))}
+                        className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold transition-colors cursor-pointer text-xs flex items-center gap-1 shadow-md shadow-emerald-950/40"
+                      >
+                        <span>Próximo</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={concluirTour}
+                        className="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold transition-colors cursor-pointer text-xs flex items-center gap-1 shadow-md shadow-emerald-950/40"
+                      >
+                        <span>Concluir</span>
+                        <Check className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )
+          })()}
+        </>
+      )}
     </div>
+
   )
 }
