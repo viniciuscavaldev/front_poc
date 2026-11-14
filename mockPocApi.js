@@ -1,7 +1,74 @@
 import crypto from 'node:crypto'
 
+const GENESIS_HASH = '0'.repeat(64)
+
 function sha256(str) {
   return crypto.createHash('sha256').update(String(str)).digest('hex')
+}
+
+function buildAuditBlock({
+  id,
+  blockIndex,
+  criado_em,
+  origem,
+  operacao,
+  endpoint,
+  sucesso = true,
+  modo_simulado = true,
+  previousHash = GENESIS_HASH
+}) {
+  const canonicalPayload = JSON.stringify({
+    id,
+    blockIndex,
+    previousHash,
+    criado_em,
+    origem,
+    operacao,
+    endpoint: endpoint || '',
+    sucesso: Boolean(sucesso),
+    modo_simulado: Boolean(modo_simulado)
+  })
+  const hash = sha256(canonicalPayload)
+  return {
+    id,
+    blockIndex,
+    criado_em,
+    origem,
+    operacao,
+    endpoint,
+    sucesso: Boolean(sucesso),
+    modo_simulado: Boolean(modo_simulado),
+    previousHash,
+    canonicalPayload,
+    hash
+  }
+}
+
+function validateBlockchainLedger(auditoriaList) {
+  const chronological = [...(auditoriaList || [])].sort((a, b) => a.blockIndex - b.blockIndex)
+  let expectedPrev = GENESIS_HASH
+  let blocosValidados = 0
+  const blocos = chronological.map((b) => {
+    const computed = sha256(b.canonicalPayload || '')
+    const prevMatches = b.previousHash === expectedPrev
+    const hashMatches = computed === b.hash
+    const valido = prevMatches && hashMatches
+    if (valido) blocosValidados += 1
+    expectedPrev = b.hash
+    return {
+      ...b,
+      valido
+    }
+  })
+  const ultimoHash = blocos.length ? blocos[blocos.length - 1].hash : GENESIS_HASH
+  return {
+    integra: blocos.length === 0 || blocosValidados === blocos.length,
+    totalBlocos: blocos.length,
+    blocosValidados,
+    genesisHash: GENESIS_HASH,
+    ultimoHash,
+    blocos
+  }
 }
 
 function buildMinimalPdf(title, protocolo) {
@@ -120,7 +187,7 @@ function createInitialState() {
   ]
 
   const now = Date.now()
-  const auditoria = [
+  const seedEvents = [
     {
       id: 1,
       criado_em: new Date(now - 3600_000).toISOString(),
@@ -158,6 +225,18 @@ function createInitialState() {
       modo_simulado: true
     }
   ]
+
+  let prevHash = GENESIS_HASH
+  const auditoriaChrono = seedEvents.map((ev, index) => {
+    const block = buildAuditBlock({
+      ...ev,
+      blockIndex: index + 1,
+      previousHash: prevHash
+    })
+    prevHash = block.hash
+    return block
+  })
+  const auditoria = [...auditoriaChrono].reverse()
 
   const sampleBatch = Array.from({ length: 100 }, (_, i) => {
     const idx = i + 1
@@ -371,7 +450,7 @@ function createInitialState() {
     auditoria,
     historicoEtapa3,
     dadosOficiais,
-    totalBlocos: 12,
+    totalBlocos: auditoria.length,
     notificacoesEnviadas: 3,
     nextProcId: 5,
     nextAuditId: 5,
@@ -429,16 +508,21 @@ export function pocCeMockApiPlugin() {
   const state = createInitialState()
 
   function addAudit(origem, operacao, endpoint, sucesso = true) {
-    state.auditoria.unshift({
+    const previousHash = state.auditoria[0]?.hash || GENESIS_HASH
+    const blockIndex = state.auditoria.length + 1
+    const block = buildAuditBlock({
       id: state.nextAuditId++,
+      blockIndex,
       criado_em: new Date().toISOString(),
       origem,
       operacao,
       endpoint,
       sucesso,
-      modo_simulado: true
+      modo_simulado: true,
+      previousHash
     })
-    state.totalBlocos += 1
+    state.auditoria.unshift(block)
+    state.totalBlocos = state.auditoria.length
   }
 
   function attachMiddleware(middlewares) {
@@ -475,6 +559,7 @@ export function pocCeMockApiPlugin() {
           const avg = total
             ? (state.processos.reduce((acc, p) => acc + (Number(p.score_ia) || 0), 0) / total).toFixed(1) + '%'
             : '—'
+          const chain = validateBlockchainLedger(state.auditoria)
           return sendJson(res, 200, {
             resumo: {
               total,
@@ -487,8 +572,10 @@ export function pocCeMockApiPlugin() {
             },
             notificacoesEnviadas: state.notificacoesEnviadas,
             blockchain: {
-              integra: true,
-              totalBlocos: state.totalBlocos
+              integra: chain.integra,
+              totalBlocos: chain.totalBlocos,
+              ultimoHash: chain.ultimoHash,
+              genesisHash: chain.genesisHash
             }
           })
         }
@@ -532,6 +619,15 @@ export function pocCeMockApiPlugin() {
               bloqueado: true,
               codigo: 'F-03',
               mensagem: 'Bloqueio F-03: Omissão de campo obrigatório (Chassi do veículo não informado).'
+            })
+          }
+
+          if (chassi.length !== 17 || /INEXISTENTE|INVALID|00000000000000000/i.test(chassi)) {
+            addAudit('ANTIFRAUDE_ETAPA_II', 'BLOQUEIO_F03_CHASSI_INEXISTENTE', '/processos', false)
+            return sendJson(res, 422, {
+              bloqueado: true,
+              codigo: 'F-03',
+              mensagem: `Bloqueio F-03: Chassi (${chassi}) inexistente na base estadual DETRAN-CE ou formato VIN inválido (17 caracteres).`
             })
           }
 
@@ -636,6 +732,10 @@ export function pocCeMockApiPlugin() {
           const origem = parsed.searchParams.get('origem')
           const list = origem ? state.auditoria.filter((a) => a.origem === origem) : state.auditoria
           return sendJson(res, 200, list)
+        }
+
+        if (method === 'GET' && pathname === '/blockchain/validar') {
+          return sendJson(res, 200, validateBlockchainLedger(state.auditoria))
         }
 
         if (method === 'POST' && pathname === '/assinatura/pades') {

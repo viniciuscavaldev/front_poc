@@ -1,0 +1,736 @@
+This app was imported from GitHub repository viniciuscavaldev/front_poc.
+Gemini 4 Hydrogen
+Ran for 27s
+
+Action history
+BRIEFING DE DESIGN & ENGENHARIA DE FRONTEND (UI/UX)
+PROJETO: Plataforma Digital de Registro e Transferência Veicular — DETRAN/CE
+CLIENTE CREDENCIADO: NECAVA INSPEÇÃO E PESQUISA EM TRANSPORTES LTDA (CNPJ 05.591.991/0001-48)
+OBJETIVO: Redesign Visual e de Experiência do Usuário (UI/UX) com padrão FinTech / GovTech de Classe Mundial (nível Stripe, Apple e Palantir).
+1. CONTEXTO CRÍTICO DA APLICAÇÃO
+Este software será apresentado e operado ao vivo pela Comissão de Avaliação Técnica e Fiscais do DETRAN-CE (Departamento Estadual de Trânsito do Ceará) em uma sessão pública de Prova de Conceito (PoC) de Homologação de Software.
+Os fiscais do Estado serão os operadores do sistema com câmeras ligadas.
+O sistema NÃO pode parecer um protótipo, nem uma demo de faculdade. Ele precisa transmitir a solidez, autoridade, elegância e robustez de uma infraestrutura crítica governamental de trânsito.
+A aplicação é construída em React (Vite) + Tailwind CSS + Lucide Icons.
+Todas as rotas de backend já estão 100% integradas, conectadas via mTLS com o BalcãoWS do DETRAN-CE, banco PostgreSQL e blockchain SHA-256. O objetivo deste trabalho é dar um salto monumental de qualidade estética, usabilidade, microinterações e hierarquia visual no frontend.
+2. ESTRUTURA DOS ARQUIVOS DO PROJETO (EM ANEXO NO ZIP)
+src/App.jsx: Componente mestre. Gerencia o layout geral, barra superior, navegação por abas, Dashboard/Auditoria, Etapa II (Antifraude), Etapa III (100 Imagens IA), Mesa Revisora e Transferência de Usados.
+src/PrimeiroRegistroOficial.jsx: Componente do Item 1 · Primeiro Registro / Emplacamento 0km. Contém a verificação mTLS com o BalcãoWS do DETRAN-CE, o rito operacional das 15 etapas oficiais, o modal de inspeção de payloads JSON e o modal de visualização do CRLV-e Digital oficial.
+src/Login.jsx: Tela de autenticação inicial do operador.
+src/index.css: Configuração do Tailwind e temas.
+3. DIRETRIZES DE DESIGN SYSTEM & ESTÉTICA VISUAL (DARK MODE GOV-TECH)
+Paleta de Cores e Atmosfera:
+Fundo principal: Deep Slate / Obsidian (bg-slate-950 / bg-[#0B0F17]).
+Cards e superfícies: Slate escuro com gradientes sutis e bordas ultra refinadas (border-slate-800/80 com backdrop-blur e leves reflexos de luz em cantos).
+Destaques funcionais:
+Verde Esmeralda Governamental (emerald-400 / emerald-500): Sucesso, conexões ativas, ritos concluídos e aprovação.
+Azul Safira / Sky (sky-400 / sky-500): Operações do BalcãoWS, exportações oficiais de arquivos e documentos.
+Âmbar / Dourado (amber-400 / amber-500): Faixa intermediária da Mesa Revisora e avisos operacionais.
+Vermelho Rubi (red-400 / red-500): Bloqueios antifraude imediatos e reprovações.
+Tipografia & Densidade de Informação:
+Fontes modernas sem serifa para títulos e comandos, e tipografia monoespaçada limpa (font-mono) com espaçamento balanceado para dados críticos: Chassi (VIN), Códigos RENAVAM, Placas Mercosul, Hashes SHA-256 e Timestamps.
+Densidade executiva: evitar espaços em branco desnecessários ou gigantescos que exijam rolagem infinita. O fiscal precisa bater o olho e encontrar os controles essenciais.
+Microinterações & Feedback:
+Badges com indicadores de status luminosos (ex: pequenos pulsos verdes para mTLS e Bearer Token ativo).
+Estados de hover suaves (transition-all duration-200).
+Skeletons e estados de loading elegantes ao processar requisições.
+4. REQUISITOS DETALHADOS POR MÓDULO / ABA
+A. Barra Superior Global (Header)
+Exibir a identidade da NECAVA · DETRAN/CE com CNPJ 05.591.991/0001-48.
+Indicadores em formato de pílulas (status pills):
+mTLS BalcãoWS: CONECTADO (HTTP 200) (badge verde sólido com ícone de escudo ou cadeado);
+Integração: AO VIVO / SIMULAÇÃO (badge de alta visibilidade);
+Bearer: ATIVO (JWT BalcãoWS) (badge verde esmeralda com pulso luminoso quando configurado);
+Botão de atualizar dados e botão de logout discreto.
+B. Aba 1: Item 1 · Primeiro Registro / Emplacamento (0km)
+Cabeçalho do Caso Real: Mercedes-Benz B200 CGI (Chassi NEM85106037002GB2, Placa NEV1A26, NF-e Danfe oficial com chave de 44 dígitos, Adquirente Vinicius Cavalcante Viana, CPF 075.695.773-70).
+Botão "Executar Verificação BalcãoWS (mTLS)": Dispara a verificação ao vivo da sessão biométrica contra o endpoint balcaows.detran.ce.gov.br. Quando bem-sucedido, exibir o card de sessão autenticada com o token JWT retornado pelo Estado.
+Rito Operacional das 15 Etapas (I a XV):
+Barra de progresso dinâmica (0% a 100%) com animação fluida.
+Linha do tempo ou grid de etapas interativas. Cada etapa deve exibir o método HTTP (POST/GET), endpoint do BalcãoWS e status de execução.
+Ao clicar em uma etapa, abre o Modal de Inspeção Técnica do BalcãoWS com abas ou blocos elegantes para: Camada de Segurança mTLS, Payload Enviado (JSON) e Resposta do DETRAN-CE (JSON), com botão de cópia de JSON funcional.
+Ao concluir as 15 etapas, exibir o banner de sucesso com o botão "Visualizar CRLV-e Emitido".
+Modal do CRLV-e Digital (Padrão Oficial Brasileiro):
+Deve reproduzir fielmente a estética do documento oficial verde e branco de trânsito emitido pelo DETRAN-CE / SENATRAN (Resolução CONTRAN 809/2020).
+Incluir: Cabeçalho da República Federativa do Brasil, DETRAN-CE, Grid com Código de Segurança CLA (98412847192), RENAVAM (01429817451), Placa (NEV1A26), Chassi, Proprietário, QR Code VIO de validação e carimbo de assinatura digital PAdES (e-CNPJ NECAVA).
+Botão de Baixar PDF Assinado (.pdf) e botão de Imprimir CRLV-e (compatível com window.print()).
+C. Aba 2: Dashboard & Auditoria Segregada
+Cards estatísticos no topo: Total de Processos, Aprovados/Concluídos, Mesa Revisora/Reprovados, e Integridade Blockchain (VD-06) com validação de blocos SHA-256.
+Card de Assinatura Institucional PAdES (AC-02 · e-CNPJ NECAVA) com botão direto de gerar/baixar PDF PAdES.
+Tabela de Trilha de Auditoria Segregada (VD-07 · Item 2.1.11 do Manual) com filtro de origem funcional (BALCAOWS_DETRAN_CE, EXTERNO_BIOMETRIA, EXTERNO_VALIDACAO_DOC, MESA_REVISORA, ANTIFRAUDE_ETAPA_II).
+Tabela de Histórico de Lotes da Etapa III (IA · Anexo I): Exibindo cada lote de 100 imagens processado com tempo de execução, badge verde CONFORME (≤ 60s) e botão direto para Baixar Planilha CSV.
+D. Aba 3: Etapa II · Antifraude (4 Cenários Eliminatórios do Manual)
+Cards de visualização clara dos 4 cenários exigidos:
+F-01: Divergência Cadastral CPF Vendedor (Bloqueio automático);
+F-02: Reutilização de Laudo de Vistoria / Laudo Duplicado (Bloqueio automático);
+F-03: Chassi Inexistente / Não Cadastrado na Base Estadual (Bloqueio automático);
+F-04: Assinatura Eletrônica Incompleta / Falso Positivo de Aprovação (Bloqueio automático).
+Terminal/console integrado para exibir a resposta JSON e o motivo da rejeição imediata com visual de segurança cibernética.
+E. Aba 4: Etapa III · Processamento em Lote (100 Imagens em ≤ 60s · Anexo I)
+Cronômetro proeminente de tempo bruto: Formato 28.18s / 60.00s em destaque com tipografia monoespaçada e cor verde esmeralda.
+Seletor de Arquivos: Botão nativo para o fiscal selecionar as 100 fotos (.jpg, .png) de seu pendrive, seguido do botão de ação primária "Processar Lote".
+Botão "Exportar Planilha Oficial (CSV)": Gera o download do arquivo resultado_etapa3_100_imagens.csv codificado em UTF-8 com BOM (\uFEFF) para abrir perfeitamente no Excel do fiscal sem corromper acentos.
+Tabela de Dados dos 100 Veículos: Exibindo exatamente as 8 colunas do Manual:
+Arquivo | 2. Placa | 3. Marca | 4. Modelo | 5. Cor | 6. Posição | 7. Tipo | 8. Originalidade.
+Banner informativo de preservação de estado caso o usuário troque de abas ou recarregue a página.
+F. Aba 5: Mesa Revisora & Calibração de Faixas (Itens 1.7.8 e 1.7.9)
+Régua Visual do Semáforo (Item 1.7.8): 3 blocos visuais explicando as faixas:
+Reprovação Automática (≤ 49% - Vermelho);
+Mesa Revisora Humana (50% a 79% - Âmbar);
+Aprovação Automática (≥ 80% - Verde).
+Bloco Retrátil de Calibração (Item 1.7.9): Permite calibrar os limites de score diretamente na tela sem alterar código.
+Dossiê do Processo em Julgamento Humano: Card detalhado com alerta de inconsistência da IA, partes envolvidas, campo de texto para justificativa formal do servidor e botões claros de "Aprovar Processo" e "Reprovar com Notificação".
+5. O QUE EU ESPERO DE VOCÊ COMO RESPOSTA:
+Revise e refatore os componentes src/App.jsx e src/PrimeiroRegistroOficial.jsx (e eventuais complementos de estilo ou subcomponentes necessários) fornecendo o código JSX completo, sem omitir trechos e pronto para substituição direta.
+Garanta que todas as funções existentes, chamadas de API (api.get, api.post), endpoints, manipulação de arquivos multipart e lógica de persistência continuem funcionando 100% de forma idêntica.
+Entregue um visual impressionante, moderno, seguro e digno de uma solução governamental de ponta que deixe a Comissão do DETRAN-CE convicta da superioridade técnica da NECAVA.
+Gemini 4 Hydrogen
+Ran for 4m 37s
+
+Action history
+Here are key actions taken for the app:
+
+Edited 8 files
+bun.lock
+package.json
+index.html
+src/index.css
+vite.config.js
+src/Login.jsx
+src/PrimeiroRegistroOficial.jsx
+src/App.jsx
+Built
+✅ Migração para AI Studio e redesign visual GovTech concluídos e verificados (npm run build e endpoints /api/poc-ce/* retornando HTTP 200 na porta 3000).
+O que foi atualizado
+1. Adaptação de Ambiente & Runtime (GitHub Import)
+Gerenciador de Pacotes: Removido bun.lock e instaladas as dependências via npm.
+Servidor & Proxy: Configurado o Vite (package.json e vite.config.js) para escutar em 0.0.0.0:3000 com allowedHosts: true e middleware em memória para /api/poc-ce/* (BalcãoWS mTLS, dados oficiais do Item 1, processos, antifraude F-01 a F-04, Mesa Revisora, calibração de faixas, PDF PAdES e lote de 100 imagens Etapa III).
+2. Design System & Tipografia (index.html, src/index.css)
+Paleta Dark Mode GovTech em Obsidian (#0B0F17) e Slate estrutural (#111827) com divisores finos e destaques semânticos (emerald, sky, amber, red).
+Tipografia configurada com Plus Jakarta Sans para títulos/interface e JetBrains Mono com tabular-nums para Chassi (VIN), RENAVAM, Placa Mercosul, hashes SHA-256, payloads JSON e cronômetro.
+Regras @media print adicionadas para impressão direta do CRLV-e.
+3. Componentes Refatorados
+Autenticação (src/Login.jsx): Layout split institucional NECAVA · DETRAN/CE com acesso demonstrativo rápido (demo / nevaca123).
+Item 1 · Primeiro Registro (src/PrimeiroRegistroOficial.jsx):
+Dossiê estruturado do caso oficial Mercedes-Benz B200 CGI (NEM85106037002GB2, placa NEV1A26, NF-e Danfe e adquirente VINICIUS CAVALCANTE VIANA).
+Verificação ao vivo mTLS com retorno do token JWT, rito animado das 15 etapas (I a XV) com barra de progresso, modal de inspeção JSON por abas (Camada mTLS, Request JSON, Response JSON) com cópia e modal do CRLV-e Digital (CONTRAN 809/2020) com QR Code VIO, download do PDF assinado e impressão.
+Plataforma Principal (src/App.jsx):
+Header Global: Identidade NECAVA · DETRAN/CE, pílulas de status (mTLS BalcãoWS: CONECTADO (HTTP 200), Integração: AO VIVO, Bearer: ATIVO (JWT BalcãoWS)), atualização e logout.
+Dashboard & Auditoria: KPIs tabulares, integridade Blockchain SHA-256 (VD-06), gerador de PDF PAdES (AC-02), trilha de auditoria segregada com filtro por origem (VD-07) e histórico de lotes da Etapa III.
+Etapa II · Antifraude: Disparo dos 4 cenários eliminatórios (F-01 a F-04) com console JSON de retorno.
+Etapa III · 100 Imagens (IA): Cronômetro bruto (00.00s / 60.00s), seleção múltipla de imagens, execução de lote referência, filtro em tempo real e exportação CSV UTF-8 com BOM (\uFEFF).
+Mesa Revisora & Transferência (Seção 3.1): Régua do semáforo (Item 1.7.8), calibração dinâmica de faixas (Item 1.7.9), dossiês com justificativa obrigatória e fluxo de 13 etapas para transferência de usados.
+Checkpoint
+Create a persistent toast notification system that provides real-time feedback for backend operations (e.g., 'mTLS Connection Established', 'CSV Export Ready') using the emerald and red color scheme.
+Gemini 4 Hydrogen
+Ran for 1m 25s
+
+Action history
+Here are key actions taken for the app:
+
+Edited 4 files
+src/ToastContext.jsx
+src/main.jsx
+src/PrimeiroRegistroOficial.jsx
+src/App.jsx
+Built
+Sistema de notificações persistentes em tempo real implementado com esquema de cores Emerald (operações bem-sucedidas) e Red (falhas e bloqueios antifraude).
+Resumo da Implementação
+Provedor e Viewport Persistente: Criado o contexto global de notificações com persistência em localStorage, registro de horário (tabular-nums), empilhamento limitado às 5 notificações mais recentes, botão individual de descarte e botão Limpar notificações.
+Integração Global: Envolvida a raiz da aplicação para disponibilizar useToast() em todos os módulos.
+Operações Conectadas em Tempo Real:
+mTLS & Sincronização: Dispara mTLS Connection Established ao conectar/atualizar o BalcãoWS (ou alerta vermelho em falhas de handshake) e ao validar a sessão biométrica JWT no Item 1.
+Primeiro Registro & Transferência: Confirma conclusão do rito de 15 etapas, abertura de processos, avanço das 13 etapas, captura de geolocalização e geração/download de PDF PAdES ICP-Brasil.
+Antifraude & Mesa Revisora: Notifica bloqueios automáticos (F-01 a F-04), calibração de faixas (Item 1.7.9), geração de casos na Faixa Amarela e deliberações de aprovação ou reprovação com notificação.
+Etapa III & Exportação CSV: Emite CSV Export Ready ao concluir o processamento em lote de imagens e ao exportar a planilha UTF-8 BOM.
+Verificação
+Build de produção (compile_applet) concluído com sucesso e servidor de desenvolvimento reiniciado na porta 3000.
+Checkpoint
+Create a reusable ToastProvider and useToast hook that renders notification overlays using Tailwind emerald-500 for success messages and red-500 for error states, including a subtle slide-in animation.
+Gemini 4 Hydrogen
+Ran for 23s
+
+Action history
+Here are key actions taken for the app:
+
+Edited 2 files
+src/index.css
+src/ToastContext.jsx
+Built
+ToastProvider e useToast atualizados com animação slide-in suave e estilização semântica em emerald-500 e red-500.
+Alterações Realizadas
+Animação Slide-in: Adicionada a keyframe toast-slide-in (220ms cubic-bezier(0.16, 1, 0.3, 1) com translate3d e opacity) e suporte a prefers-reduced-motion no CSS global.
+API Reutilizável (ToastProvider / useToast):
+Disponibiliza success(title, description), error(title, description), showToast({ type, title, description }), dismissToast(id) e clearToasts().
+Renderiza overlays persistentes em pilha no canto inferior direito (z-50), utilizando bordas, anéis e ícones em emerald-500 para sucesso e red-500 para erros, com timestamp tabular e descarte individual ou em lote.
+Verificação: Build (compile_applet) validado com sucesso e servidor de desenvolvimento reiniciado na porta 3000.
+Checkpoint
+Wrap the main App component in src/App.jsx with the new ToastProvider and update the existing mTLS connection logic to call useToast to trigger success or error messages when the connection succeeds or fails.
+Gemini 4 Hydrogen
+Ran for 54s
+
+Action history
+Here are key actions taken for the app:
+
+Edited 2 files
+src/App.jsx
+src/main.jsx
+Built
+O componente principal App agora é envolvido diretamente pelo ToastProvider em src/App.jsx, com a lógica de conexão mTLS conectada ao hook useToast.
+Alterações Realizadas
+Envolvimento do App com ToastProvider:
+Extraído o conteúdo operacional para AppContent dentro de src/App.jsx e envolvido pelo <ToastProvider> no export default function App().
+Removido o ToastProvider duplicado de src/main.jsx para manter uma única instância global de notificações.
+Feedback mTLS via useToast:
+Na verificação /status-mtls dentro de carregarTudo(manual): dispara toast.success('mTLS Connection Established', ...) em emerald-500 quando mtlsConectado é verdadeiro (na conexão inicial, ao clicar em Atualizar e após novo login), e toast.error('Falha na Conexão mTLS BalcãoWS', ...) em red-500 quando a conexão falha.
+Resetado o controle mtlsNotifiedRef no logout (Sair) para garantir nova confirmação visual ao autenticar novamente.
+Verificação
+Build (compile_applet) concluído com sucesso e servidor de desenvolvimento reiniciado na porta 3000.
+Checkpoint
+Create a new 'StatusBar' component that displays real-time connectivity health for mTLS, WebSocket, and API heartbeat, integrating it into the top-right corner of the global header.
+Gemini 4 Hydrogen
+Ran for 1m 16s
+
+Action history
+Here are key actions taken for the app:
+
+Edited 3 files
+vite.config.js
+src/StatusBar.jsx
+src/App.jsx
+Built
+Componente StatusBar criado e integrado no canto superior direito do cabeçalho global.
+Resumo das Alterações
+Componente StatusBar (src/StatusBar.jsx):
+mTLS: Exibe em tempo real o estado da conexão mTLS (HTTP 200 em esmeralda, SYNC em âmbar ou FALHA em vermelho) com detalhes do certificado e-CNPJ A1 no tooltip.
+WebSocket: Conecta-se ao canal /api/poc-ce/ws com reconexão automática a cada 5s, exibindo o estado em tempo real (ATIVO, SYNC ou OFF).
+API Heartbeat: Executa polling contínuo a cada 15s em GET /api/poc-ce/health medindo a latência real em milissegundos (ms) e permitindo rechecagem manual ao clicar no indicador.
+Backend / Dev Server (vite.config.js):
+Adicionado endpoint GET /api/poc-ce/health e handler WebSocket (/api/poc-ce/ws) com frames periódicos de heartbeat.
+Integração no Header (src/App.jsx):
+Posicionado <StatusBar /> no canto superior direito do cabeçalho global ao lado dos indicadores Integração, Bearer, Atualizar e Sair.
+Verificação
+Build (compile_applet) concluído com sucesso, servidor reiniciado na porta 3000 e endpoint /api/poc-ce/health validado com HTTP 200.
+Checkpoint
+Add a vertical 'mini-map' progress indicator to the right edge of the main content area that highlights the current active tab and provides a small visual status dot (Green for complete, Amber for warning, Grey for inactive) to help users keep track of their progress across different modules.
+Gemini 4 Hydrogen
+Ran for 1m 14s
+
+Action history
+Here are key actions taken for the app:
+
+Edited 3 files
+src/ModuleMiniMap.jsx
+src/PrimeiroRegistroOficial.jsx
+src/App.jsx
+Built
+Indicador vertical de progresso (ModuleMiniMap) adicionado na borda direita da área principal de conteúdo.
+Resumo das Alterações
+Componente ModuleMiniMap (src/ModuleMiniMap.jsx):
+Exibe uma trilha vertical fixa (sticky) ao lado direito do conteúdo principal com navegação direta entre os 6 módulos.
+Destaca a aba ativa e exibe um indicador visual de status para cada módulo: Verde (Concluído), Âmbar (Atenção / em andamento) e Cinza (Inativo), além do contador geral de conclusão (X/6).
+Sincronização em Tempo Real (src/App.jsx, src/PrimeiroRegistroOficial.jsx):
+1º Registro: reflete o avanço das 15 etapas, pendência mTLS ou conclusão do rito.
+Dashboard: indica trilha VD-07 auditada ou alerta de integridade Blockchain.
+Antifraude: acompanha o progresso dos 4 bloqueios (F-01 a F-04).
+100 Imagens (IA): sinaliza lote em execução, SLA excedido ou lote normalizado dentro do limite ≤ 60s.
+Mesa Revisora: aponta pendências na Faixa Amarela (Âmbar) ou fila zerada (Verde).
+Transferência (Seção 3.1): acompanha as etapas (X/13) e conclusão dos processos.
+Verificação
+Build (compile_applet) concluído com sucesso e servidor de desenvolvimento reiniciado na porta 3000.
+Checkpoint
+Introduce a 'Live Blockchain Validation' toggle in the Dashboard module that displays a real-time verification status of the current session's ledger entries against the SHA-256 hash chains.
+Gemini 4 Hydrogen
+Ran for 3m 1s
+
+Action history
+Here are key actions taken for the app:
+
+Edited 3 files
+vite.config.js
+src/LiveBlockchainValidation.jsx
+src/App.jsx
+Built
+O toggle Live Blockchain Validation foi integrado ao módulo Dashboard & Auditoria com verificação criptográfica em tempo real da cadeia SHA-256 dos registros da sessão.
+O que foi implementado
+Backend / Ledger Encadeado (vite.config.js):
+Os registros da trilha de auditoria (auditoria) agora formam uma cadeia criptográfica a partir de GENESIS_HASH (64 zeros), atribuindo a cada bloco blockIndex, previousHash, canonicalPayload e hash SHA-256 via buildAuditBlock e addAudit.
+Novo endpoint GET /api/poc-ce/blockchain/validar retorna a lista de blocos ordenados, genesisHash, ultimoHash, contagem de blocos validados e status integra, além de atualizar GET /api/poc-ce/dashboard com o resultado real da validação (validateBlockchainLedger).
+Componente LiveBlockchainValidation (src/LiveBlockchainValidation.jsx e src/App.jsx):
+Toggle role="switch" rotulado Live Blockchain Validation posicionado logo abaixo dos cards estatísticos do Dashboard.
+Quando ativado, consulta /api/poc-ce/blockchain/validar ao ligar, a cada novo registro na auditoria e a cada 5 segundos (além do botão manual Revalidar Agora).
+Executa validação independente no navegador via Web Crypto API (crypto.subtle.digest('SHA-256', ...)) sobre o canonicalPayload de cada bloco e verifica o encadeamento previousHash bloco a bloco.
+Exibe resumo de integridade (Status da Cadeia, Blocos Auditados, Head Hash, Última Verificação), tabela bloco a bloco (VÁLIDO / INVÁLIDO) e notificações toast ao validar ou detectar divergência.
+Verificações executadas
+compile_applet: build concluído sem erros (vite build).
+lint_applet: não há script "lint" definido em package.json.
+Verificação em runtime após reinício do servidor (http://127.0.0.1:3000): GET /api/poc-ce/blockchain/validar e GET /api/poc-ce/dashboard retornaram HTTP 200 com integra: true e 4/4 blocos encadeados e validados.
+Checkpoint
+BRIEFING DE ENGENHARIA DE UI/UX — ETAPA 1: PRIMEIRO REGISTRO VEICULAR (0KM)
+PROJETO: Plataforma Digital de Registro e Homologação Veicular — DETRAN/CE
+COMPONENTE ALVO: src/PrimeiroRegistroOficial.jsx
+CLIENTE: NECAVA INSPEÇÃO E PESQUISA EM TRANSPORTES LTDA (CNPJ 05.591.991/0001-48)
+OBJETIVO: Redesign completo do componente com experiência guiada (estilo Walkthrough/Tutorial intuitivo para o fiscal do DETRAN-CE).
+1. CONTEXTO DO MÓDULO (ITEM 1 DO EDITAL DETRAN-CE)
+Esta é a tela de abertura da Prova de Conceito pública. O fiscal do Estado vai avaliar o fluxo completo de Primeiro Registro / Emplacamento de Veículo 0km.
+A tela precisa ser tão intuitiva que o fiscal consiga seguir o fluxo como se estivesse em um tutorial interativo de alta tecnologia (padrão GovTech / FinTech internacional).
+O componente consome a API local /api/poc-ce e orquestra 3 grandes momentos:
+Verificação de Conexão mTLS com o BalcãoWS do DETRAN-CE (chamada ao vivo com e-CNPJ e biometria facial);
+Execução do Rito Operacional de 15 Etapas Oficiais (com linha do tempo dinâmica e inspeção técnica de cada endpoint);
+Emissão e Visualização do CRLV-e Digital (no padrão visual oficial da cédula verde e branca brasileira, com download de PDF assinado via PAdES e impressão).
+2. DADOS DO VEÍCULO E ADQUIRENTE FORNECIDOS PELO DETRAN-CE
+O componente recebe esses dados de api.get('/oficial/dados'):
+Veículo: Mercedes-Benz B200 CGI · 2024/2024 · Gasolina · Cor Preta · Categoria Particular
+Chassi (VIN): NEM85106037002GB2
+Placa Oficial Atribuída: NEV1A26
+Código RENAVAM: 01429817451
+Código de Segurança do CLA: 98412847192
+Chave NF-e (DANFE): 23241105591991000148550010000001231847192834
+Adquirente / Proprietário: VINICIUS CAVALCANTE VIANA (CPF 075.695.773-70)
+3. DIRETRIZES DE UI/UX PARA O REDESIGN (PASSO A PASSO / TUTORIAL)
+Estruture a interface em 3 blocos visuais bem demarcados, com indicadores de "Passo 1", "Passo 2" e "Passo 3" para conduzir os olhos do avaliador:
+PASSO 1: Camada de Segurança mTLS & Sessão Biométrica
+Um card imponente de conectividade com o endpoint balcaows.detran.ce.gov.br/balcaows_dev.
+Botão primário com animação de loading: "Executar Verificação BalcãoWS (mTLS)" (dispara api.post('/oficial/testar-balcaows')).
+Estado de Sucesso (Token Ativo): Banner verde esmeralda com pulso luminoso destacando:
+Sessão Biométrica Autenticada com Sucesso;
+e-CNPJ A1 ICP-Brasil da NECAVA validado;
+Campo com o Token Bearer JWT retornado pelo Estado (com opção de copiar).
+PASSO 2: O Rito Operacional das 15 Etapas Oficiais
+Cabeçalho executivo do veículo homologado com botão para baixar a DANFE Oficial em PDF (DANFE_TESTE_DETRAN_CE.pdf).
+Botão de ação primária: "Executar Rito Operacional (15 Etapas)" (com botão secundário de "Reiniciar Rito" após conclusão).
+Barra de Progresso Inteligente (0% a 100%): Acompanha a execução de cada etapa de 1 a 15.
+Linha do Tempo / Stepper Interativo:
+Cards elegantes para cada uma das 15 etapas (I a XV).
+Cada card deve exibir o número da etapa, nome oficial, método HTTP (POST/GET), rota no BalcãoWS e badge de status (Pendente, Processando, Concluído).
+Ação de Clique no Card: Abre o Modal de Inspeção Técnica do BalcãoWS, contendo:
+Headers de segurança mTLS e Bearer Token;
+JSON do Payload Enviado (Request Body) com botão de copiar;
+JSON da Resposta Oficial do DETRAN-CE (Response Body) com status HTTP 200 OK.
+PASSO 3: Conclusão & Cédula do CRLV-e Digital Oficial
+Ao concluir a 15ª etapa, exibe um banner de congratulações com o botão de destaque: "Visualizar CRLV-e Emitido".
+Modal do CRLV-e Digital (Padrão Oficial Brasileiro):
+Deve reproduzir fielmente a estética do documento oficial verde e branco de trânsito emitido pelo DETRAN-CE:
+Cabeçalho oficial: República Federativa do Brasil / Ministério dos Transportes · SENATRAN / DETRAN/CE;
+Grade com borda verde oficial (#006B3F) e todos os campos regulamentares: CLA, CRV, RENAVAM, Placa Mercosul, Chassi, Dados do Proprietário;
+QR Code de autenticação no padrão VIO/SENATRAN;
+Carimbo digital: "Assinado digitalmente via PAdES (e-CNPJ ICP-Brasil NECAVA 05.591.991/0001-48)";
+Botões de ação no rodapé: "Baixar PDF Assinado (PAdES)" (aponta para /downloads/CRLV_NEV1A26_OFICIAL.pdf) e "Imprimir CRLV-e" (window.print()).
+4. REQUISITOS TÉCNICOS OBRIGATÓRIOS:
+Mantenha 100% das integrações com o backend intactas:
+api.get('/oficial/dados')
+api.post('/oficial/testar-balcaows')
+api.post('/oficial/executar-15-etapas')
+Prop onAtualizarDashboard() chamada após autenticar a biometria.
+Use Tailwind CSS moderno (Dark Theme com tons Obsidian/Slate bg-slate-950, acentos em emerald-500 e sky-500).
+Use ícones da biblioteca lucide-react (garanta que todos os ícones utilizados estejam declarados no import).
+Entregue o código completo de src/PrimeiroRegistroOficial.jsx, pronto para copiar e colar diretamente no projeto.
+Gemini 4 Hydrogen
+Ran for 15s
+
+Action history
+Como o fluxo guiado deve controlar a passagem do Passo 1 (mTLS) para o Passo 2 (15 Etapas)?
+Bloquear Passo 2 estritamente ate concluir Passo 1
+Qual formato de visualizacao voce prefere para o rito das 15 etapas oficiais no Passo 2?
+Linha do tempo vertical sequencial com trilha de progresso
+Como o CRLV-e Digital oficial deve ser apresentado no Passo 3 apos a conclusao do rito?
+Preview da cedula no Passo 3 mais modal ampliado e impressao
+Gemini 4 Hydrogen
+Ran for 44s
+O plano de implementação do redesign guiado (Passos 1, 2 e 3) para o módulo de Primeiro Registro Veicular (0km) está pronto para revisão.
+Proceed with
+
+Implementation plan
+Gemini 4 Hydrogen
+Ran for 2m 6s
+
+Action history
+Here are key actions taken for the app:
+
+Edited 1 file
+src/PrimeiroRegistroOficial.jsx
+Built
+O módulo Primeiro Registro Veicular (0km) foi redesenhado como um fluxo guiado em 3 passos sequenciais (Passo 1, Passo 2 e Passo 3), preservando integralmente as integrações com /api/poc-ce, notificações toast e sincronização de progresso.
+O que foi implementado
+Navegação Guiada & Dossiê Homologado:
+Barra superior interativa indicando o estado em tempo real dos Passos 1, 2 e 3 com rolagem direta para cada bloco.
+Dossiê do veículo oficial (Mercedes-Benz B200 CGI · Chassi NEM85106037002GB2 · Placa NEV1A26 · RENAVAM 01429817451 · CLA 98412847192), NF-e/DANFE (com download direto) e adquirente (VINICIUS CAVALCANTE VIANA · CPF 075.695.773-70).
+Passo 1 — Camada de Segurança mTLS & Sessão Biométrica:
+Botão Executar Verificação BalcãoWS (mTLS) (POST /oficial/testar-balcaows) com estado de carregamento.
+Quando autenticado (HTTP 200), exibe o banner esmeralda com indicador ativo de sessão biométrica, validação do e-CNPJ A1 ICP-Brasil da NECAVA e campo do Token Bearer JWT com botão de cópia.
+Passo 2 — Rito Operacional das 15 Etapas Oficiais (I a XV):
+Bloqueio estrito pré-mTLS: o botão Executar Rito Operacional (15 Etapas) e o avanço do rito ficam estritamente bloqueados até a autenticação com sucesso no Passo 1, com atalho direto para autenticar o mTLS.
+Linha do tempo vertical sequencial: trilha vertical contínua conectando as etapas I a XV com barra de progresso dinâmica (0% a 100%), método HTTP (POST/GET), endpoint BalcãoWS, status individual (Bloqueado, Pendente, Processando, Concluído) e botão Reiniciar Rito ao término.
+Clicar em qualquer etapa abre o Modal de Inspeção Técnica do BalcãoWS com abas (Visão Completa, Camada mTLS, Request JSON, Response JSON), token JWT da sessão e botões funcionais de cópia.
+Passo 3 — Conclusão & Cédula do CRLV-e Digital Oficial:
+Após a conclusão da 15ª etapa, exibe o banner de homologação concluída e o preview inline da cédula verde e branca oficial (Resolução CONTRAN 809/2020) diretamente na página, com QR Code VIO vetorial e carimbo PAdES (e-CNPJ ICP-Brasil NECAVA 05.591.991/0001-48).
+Inclui botões para abrir o modal ampliado (Visualizar CRLV-e Emitido), baixar o PDF assinado (Baixar PDF Assinado (PAdES)) e imprimir (Imprimir CRLV-e via window.print(), garantindo apenas uma instância #crlv-printable-document ativa por vez).
+Verificações executadas
+Build (compile_applet): compilação Vite concluída sem erros (lint_applet reportou apenas ausência de script "lint" em package.json).
+Endpoints e ativos após reinício do servidor: /api/poc-ce/oficial/dados (15 etapas), /api/poc-ce/oficial/testar-balcaows, /api/poc-ce/oficial/executar-15-etapas e os PDFs /downloads/CRLV_NEV1A26_OFICIAL.pdf e /downloads/DANFE_TESTE_DETRAN_CE.pdf responderam com HTTP 200.
+Checkpoint
+como um super desevolvedor uix, voce concorda com esse menu ai no topo, ou prefere lateramente ? eu nunca tive esse conforto visaul em desenvolvimento web com o menu em cima, mas deixo voce me da a melhor dica
+Gemini 4 Hydrogen
+Ran for 20s
+Prefiro o menu lateral (Sidebar à esquerda), sem dúvida — e o seu desconforto visual com o menu no topo tem base técnica real.
+Para uma plataforma operacional GovTech/FinTech com 6 módulos de nomes longos (como “Transferência de Usados (Seção 3.1)” e “Mesa Revisora & Faixas”), tabela densa, linha do tempo vertical e visualização de documentos, barra superior com abas horizontais é o pior encaixe.
+Por que a Sidebar lateral é muito superior aqui
+Altura vertical é o recurso mais escasso em notebook/monitor (1366×768 e 1440×900)
+Hoje o <header> tem duas faixas empilhadas (identidade + telemetria em cima, e a barra de abas embaixo), consumindo ~120px fixos da altura útil. Tirando as abas do topo, o conteúdo principal (linha do tempo de 15 etapas, tabelas de auditoria, CRLV-e) respira imediata e visivelmente melhor.
+Elimina navegação duplicada (Topo + Mini-Map)
+Atualmente existem dois menus competindo pela atenção: as 6 abas horizontais no topo e o ModuleMiniMap vertical na direita.
+Em uma Sidebar à esquerda (256px), você funde os dois: cada item do menu lateral já mostra o ícone, o nome do módulo sem cortar texto, o contador da Mesa Revisora e o ponto de status (verde/âmbar/cinza). Isso limpa completamente a borda direita e dá largura total ao conteúdo principal.
+Leitura vertical vence varredura horizontal em nomes técnicos
+Menus no topo funcionam bem para 3 a 5 links curtos de 1–2 palavras (ex.: Produto, Preços, Docs). Quando há 6 módulos com nomenclatura de edital, o olho lê uma lista vertical alinhada à esquerda muito mais rápido e sem barra de rolagem horizontal em telas médias.
+Padrão visual de Stripe, Linear e Palantir
+Consoles críticos de operação usam uma regra clássica:
+Esquerda (240px–260px, recolhível para ícones): Identidade NECAVA + Navegação dos 6 módulos com status de progresso + Botão de sair no rodapé da barra.
+Topo (1 única linha fina de 56px): Apenas o título/contexto da tela atual à esquerda e o StatusBar (mTLS, WebSocket, Latência API) + Atualizar à direita.
+Mobile (< 1024px): A sidebar vira um menu retrátil (drawer) acionado por um botão no canto superior esquerdo.
+Se quiser, posso aplicar essa transição agora mesmo no layout principal — mantendo todas as funções, atalhos e o progresso visual integrados na Sidebar esquerda recolhível com Topbar de 1 linha. Quer que eu faça essa mudança?
+Se quiser, posso aplicar essa transição agora mesmo no layout principal — mantendo todas as funções, atalhos e o progresso visual integrados na Sidebar esquerda recolhívelcomTopbar de 1 linha. Quer que eu faça essa mudança? quero
+Gemini 4 Hydrogen
+Ran for 1m 15s
+
+Action history
+Here are key actions taken for the app:
+
+Edited 2 files
+src/Sidebar.jsx
+src/App.jsx
+Built
+A transição para Sidebar lateral recolhível à esquerda + Topbar em 1 única linha foi aplicada com sucesso.
+O que mudou na estrutura visual
+Sidebar Lateral Unificada (Desktop fixa e recolhível):
+Concentra a marca institucional (NECAVA · DETRAN/CE · CNPJ 05.591.991/0001-48), o botão de recolher/expandir (com estado salvo localmente) e os 6 módulos da PoC em lista vertical limpa.
+Incorpora diretamente os indicadores de progresso e status que antes ficavam separados à direita (pontos em esmeralda para concluído, âmbar para atenção e cinza para inativo, detalhe em tempo real e contador da Mesa Revisora).
+Traz a legenda compacta, dados do operador autenticado e o botão Encerrar Sessão no rodapé da barra lateral.
+Drawer Responsivo para Telas Menores:
+Abaixo de 1024px, o menu lateral abre em formato de gaveta deslizante acionada pelo botão no canto esquerdo do topo.
+Topbar Enxuta em 1 Linha (56px):
+Exibe apenas o título do módulo ativo à esquerda e a telemetria em tempo real (StatusBar, modo de integração, status JWT e botão Atualizar) à direita, liberando mais altura vertical e toda a largura da área central para tabelas, linha do tempo e documentos.
+Verificações executadas
+compile_applet: build concluído sem erros (lint_applet reportou ausência de script "lint" em package.json).
+Servidor reiniciado e validado via HTTP 200 na raiz da aplicação e no endpoint /api/poc-ce/health.
+Checkpoint
+I made some changes.
+Manual edit
+Edited 1 file
+public/cipetran.jpg
+Checkpoint
+apos isso quero que voce crie 2 tipos de css totalmente independentes, desenvolvedores front, com pouco tempo eles misturando o modo light e nigth em 1 mesmo css, assim baguncando tudo, ja eu que estou neste ramo a bastente tempo, quero que voce faca separadamente a versao night e a versao ligh, que no caso a nigth, ja temos que é essa, a ligth que é o modo claro, seguindo a paleta de cores da logo #f5f5de: Bege
+#e7e441: Amarelo
+#50502e: Cinza-amarelado escuro
+#7d722e: Verde-oliva
+#9a9e88: Cinza-esverdeado vou colocar a logo la na public, public/cipetran.jpg
+Gemini 4 Hydrogen
+Ran for 6m 13s
+
+Action history
+Here are key actions taken for the app:
+
+Edited 13 files
+public/themes/theme-night.css
+public/themes/theme-light.css
+src/ThemeContext.jsx
+src/BrandLogo.jsx
+index.html
+src/index.css
+src/Sidebar.jsx
+src/StatusBar.jsx
+src/ToastContext.jsx
+src/LiveBlockchainValidation.jsx
+src/Login.jsx
+src/PrimeiroRegistroOficial.jsx
+src/App.jsx
+Built
+Implementação concluída com dois arquivos CSS totalmente independentes para os modos Night e Light, além da integração da logo CIPETRAN e do seletor dinâmico de tema:
+O que foi entregue
+Arquivos CSS 100% Independentes (sem mistura Light/Night)
+Modo Night (theme-night.css): preserva integralmente a estética GovTech Obsidian original (#0b0f17, superfícies escuras em slate/obsidian e acentos esmeralda), com color-scheme: dark.
+Modo Light (theme-light.css): construído do zero seguindo a paleta institucional da logo CIPETRAN, com color-scheme: light e sem uso de !important:
+#f5f5de (Bege) para o fundo principal e base de contraste;
+#e7e441 (Amarelo) para destaques institucionais;
+#50502e (Cinza-amarelado escuro) para tipografia principal e estados de hover;
+#7d722e (Verde-oliva) para botões primários e itens ativos;
+#9a9e88 (Cinza-esverdeado) para bordas, divisores e metadados sutis.
+Troca Real de Folha de Estilo em Tempo de Execução
+O documento HTML carrega apenas um único arquivo por vez por meio da tag <link id="app-theme-css">, com script pré-render para evitar flash visual ao recarregar.
+O ThemeProvider alterna dinamicamente o href entre os dois arquivos CSS e persiste a preferência no localStorage, com botão de alternância (Claro / Escuro) na Topbar e na tela de Login.
+Integração da Logo CIPETRAN (cipetran.jpg)
+Componente dedicado BrandLogo integrado na Sidebar (desktop e drawer mobile) e na tela de Login carregando a imagem pública /cipetran.jpg, com fallback automático para o emblema tipográfico enquanto o arquivo estiver vazio.
+Preservação de Legibilidade Técnica
+Blocos de console/JSON do BalcãoWS mantêm contraste escuro dedicado para leitura de payloads, e a cédula do CRLV-e Digital preserva o padrão oficial branco e verde (#006B3F) em ambos os temas.
+Verificações executadas
+Compilação (npm run build): concluída com sucesso.
+Lint: script lint não configurado no package.json.
+Servidor e Endpoints: servidor reiniciado na porta 3000, com HTTP 200 validado na aplicação principal, em ambos os arquivos CSS independentes (theme-night.css com 2069 bytes e theme-light.css com 2414 bytes) e no healthcheck da API /api/poc-ce/health.
+Checkpoint
+hmmmm, sabe o que é, a poc, é apresentada em um projetor, na parede sem a a tela pra aumentar a qualidade dos nitz, essa cor do ligth, creio que vai praticamente juntar com a cor da parede, vamos melgorar
+Gemini 4 Hydrogen
+Ran for 2m 2s
+
+Action history
+Here are key actions taken for the app:
+
+Edited 1 file
+public/themes/theme-light.css
+Built
+Excelente observação — em projeção direta na parede (sem tela e com perda de nits), fundos muito claros e bordas translúcidas realmente lavam e se misturam com a pintura da parede.
+Recalibramos exclusivamente o arquivo independente do tema Light (theme-light.css) para alto contraste em projetor, mantendo a identidade oficial da paleta CIPETRAN (#f5f5de, #e7e441, #50502e, #7d722e, #9a9e88) e preservando o tema Night intacto:
+Melhorias aplicadas para projeção em parede
+Separação real entre fundo, menu e cartões
+Fundo geral (--bg-canvas: #d5d9c0) e Sidebar (--bg-sidebar: #c3c8ab) / Topbar (--bg-topbar: #c9ceb2): tons matte cinza-esverdeados derivados de #9a9e88 + #f5f5de, evitando que a moldura da tela se funda com a parede clara.
+Cartões principais (--bg-surface: #ffffff): branco puro para concentrar o máximo de brilho (nits) do projetor exatamente onde estão os dados, tabelas e etapas.
+Sub-blocos e cabeçalhos internos (--bg-surface-alt: #f5f5de): o bege oficial da logo passa a criar contraste nítido dentro dos cartões brancos.
+Bordas 100% sólidas (sem transparência que some na parede)
+Divisores em #82876b e bordas principais/inputs em #50502e sólido para que cartões, campos e botões fiquem bem recortados à distância.
+Tipografia e CTAs para leitura de longe
+Texto principal em #141509 e metadados em #424424 / #50502e;
+Botões primários em #50502e (hover #7d722e) com texto #f5f5de, destaques em #e7e441 / #f3f09c e badges semânticos com preenchimento saturado e borda sólida.
+Verificações
+Compilação (npm run build): concluída com sucesso.
+Lint: script lint não configurado no package.json.
+Servidor: theme-light.css servido com HTTP 200 (2538 bytes) e tokens atualizados em runtime.
+Checkpoint
+Create a 'High-Contrast' mode CSS file that specifically targets projector visibility by using deep charcoal backgrounds (#121212), high-visibility crisp white text (#FFFFFF), and vibrant neon accents (neon-green for success) to ensure readability on low-quality projection surfaces.
+Gemini 4 Hydrogen
+Ran for 1m 17s
+
+Action history
+Here are key actions taken for the app:
+
+Edited 8 files
+public/themes/theme-high-contrast.css
+src/ThemeContext.jsx
+index.html
+src/ThemeSwitcher.jsx
+src/Login.jsx
+src/App.jsx
+src/Sidebar.jsx
+src/StatusBar.jsx
+Built
+Created the independent High-Contrast CSS theme (theme-high-contrast.css) tailored for low-quality projection surfaces and bare-wall presentations, and integrated it as a third standalone option alongside the existing Night and Light stylesheets.
+Implemented Changes
+Standalone High-Contrast Stylesheet (theme-high-contrast.css)
+Deep Charcoal Surfaces: #121212 primary canvas and nested blocks, #080808 sidebar/inputs, #0d0d0d solid topbar, #1b1b1b elevated cards, and #050505 terminal/JSON console.
+High-Visibility Typography & Borders: Pure #FFFFFF primary text, crisp #F5F5F5 / #D4D4D8 secondary text, and solid #4D4D4D / #B3B3B3 borders without low-opacity washout.
+Vibrant Neon Accents: Neon-green (#00FF66) for primary actions, active states, and success indicators (including real-time status dots in the sidebar and telemetry bar), neon-cyan (#00E5FF) for info, neon-yellow (#FFD600 / #FAFF00) for warnings and focus outlines, and neon-crimson (#FF3B5C / #FF5C77) for errors.
+Dynamic 3-Theme Switching & Pre-Paint Hydration
+Extended ThemeContext and the pre-render script to load strictly one stylesheet at a time (night, light, or high-contrast) via <link id="app-theme-css"> with localStorage persistence.
+Added a 3-mode ThemeSwitcher (Night, Light, Alto Contraste / Projetor) in both the main Topbar and the Login screen.
+Verification Results
+Build (compile_applet): Succeeded cleanly (Build succeeded - the applet is compiled).
+Lint (lint_applet): Exited 1 as expected because no lint script is defined in package.json.
+Server & Endpoints: Dev server restarted on port 3000; verified HTTP 200 across /, all three independent theme stylesheets (theme-night.css, theme-light.css, theme-high-contrast.css at 2313 bytes), and /api/poc-ce/health.
+Checkpoint
+tive uma ideia fantastica, sabe quando clica em executar rito operacional, e as 15 etapas vao tomando vida ? quero que voce faca que a cada etapa, a pagina vai acompanhando entendeu ? como se fosse dando scroll
+Gemini 4 Hydrogen
+Ran for 59s
+
+Action history
+Here are key actions taken for the app:
+
+Edited 1 file
+src/PrimeiroRegistroOficial.jsx
+Built
+Implementado o acompanhamento automático por scroll suave durante a execução das 15 etapas do Rito Operacional no módulo Primeiro Registro (0km).
+Como funciona
+Rastreamento de Câmera por Etapa (1 a 15):
+Ao clicar em "Executar Rito Operacional (15 Etapas)", a página realiza scroll suave (scrollIntoView centralizado, respeitando prefers-reduced-motion) acompanhando cada cartão conforme ele entra em processamento e recebe destaque visual com anel ativo.
+Transição Automática para o CRLV-e (Passo 3):
+Após finalizar a 15ª etapa e gravar no backend, a tela aguarda uma breve pausa para visualização da conclusão e desliza automaticamente até o Passo 3, exibindo a cédula do CRLV-e Digital Oficial com compensação de margem para a Topbar fixa.
+Controle "Auto-Scroll: ON/OFF":
+Botão discreto no cabeçalho do Passo 2 permite ligar ou desligar o acompanhamento automático a qualquer momento, inclusive durante a execução.
+Verificações
+Compilação (npm run build): concluída com sucesso.
+Lint: script lint não configurado no package.json.
+Servidor e Endpoints: servidor reiniciado na porta 3000, com HTTP 200 validado na aplicação principal, em /api/poc-ce/health e em /api/poc-ce/oficial/dados.
+Checkpoint
+so colocar um time slip pra cada um de 1,5s dos 15 cartoes
+Gemini 4 Hydrogen
+Ran for 33s
+
+Action history
+Here are key actions taken for the app:
+
+Edited 1 file
+src/PrimeiroRegistroOficial.jsx
+Built
+Ajustado o intervalo de execução do Rito Operacional para 1,5 segundo (1500ms) por cartão em todas as 15 etapas (I a XV), permitindo acompanhar com clareza cada etapa durante o auto-scroll na apresentação.
+Verificações
+Compilação (npm run build): concluída com sucesso.
+Lint: script lint não configurado no package.json.
+Servidor: reiniciado na porta 3000 com HTTP 200 confirmado na aplicação principal e em /api/poc-ce/health.
+Checkpoint
+aqui, voce coloca no lugar do br a logo do ceara, retira o nome senatran, ao inves de republica federativa do brasil, seria melhor um governo do estado do ceara
+image.png
+image.png
+Gemini 4 Hydrogen
+Ran for 1m 13s
+
+Action history
+Here are key actions taken for the app:
+
+Edited 1 file
+src/PrimeiroRegistroOficial.jsx
+Built
+Cabeçalho da cédula do CRLV-e Digital e do modal ampliado atualizado para a identidade estadual do Ceará:
+Alterações aplicadas
+Emblema do Ceará no lugar de "BR":
+Substituído o selo circular BR por um brasão vetorial estilizado nas cores e símbolos do Estado do Ceará (campo verde #006B3F, losango amarelo #FACC15, sol dourado, jangada e ondas), mantendo nitidez máxima em tela, projeção e impressão (window.print()).
+Título institucional atualizado:
+Alterado de "República Federativa do Brasil" para "Governo do Estado do Ceará", acompanhado do subtítulo "Poder Executivo Estadual · Trânsito Digital" e da identificação oficial do DETRAN/CE — Departamento Estadual de Trânsito do Ceará.
+Remoção completa de "SENATRAN":
+Retirada toda menção a "Ministério dos Transportes · SENATRAN" tanto no documento CRLV-e quanto no cabeçalho do modal ampliado.
+Verificações
+Compilação (npm run build): concluída com sucesso.
+Lint: script lint não configurado no package.json.
+Varredura de texto & Servidor: zero ocorrências restantes de SENATRAN ou República Federativa no código-fonte React; servidor reiniciado na porta 3000 com HTTP 200 validado na aplicação e em /api/poc-ce/health.
+Checkpoint
+agora, para cada aba, o certo seria a gente ter feito uma page, com uma rota, correto? e nao juntar tudo, ex, na url, se eu clico em qualquer modulo, continua o dominio sem o /
+Gemini 4 Hydrogen
+Ran for 3m 14s
+
+Action history
+Here are key actions taken for the app:
+
+Installed 1 package
+Edited 9 files
+src/routes.js
+src/pages/PrimeiroRegistroPage.jsx
+src/pages/DashboardPage.jsx
+src/pages/AntifraudePage.jsx
+src/pages/VisaoComputacionalPage.jsx
+src/pages/MesaRevisoraPage.jsx
+src/pages/TransferenciaUsadosPage.jsx
+src/Sidebar.jsx
+src/App.jsx
+Built
+Você tem toda razão — separar cada módulo em uma página dedicada com rota real é a arquitetura correta: permite compartilhar links diretos, usar os botões Avançar/Voltar do navegador, atualizar a página (F5) mantendo o módulo aberto e acompanhar a rota ativa na barra de endereços.
+O que foi refatorado
+Roteamento Real com React Router (BrowserRouter + Routes)
+Cada módulo agora possui uma página isolada e uma URL dedicada:
+/primeiro-registro — Item 1 · Primeiro Registro (0km)
+/dashboard — Dashboard & Auditoria (VD-06 / VD-07)
+/antifraude — Etapa II · Antifraude (F-01 a F-04)
+/visao-computacional — Etapa III · 100 Imagens (IA)
+/mesa-revisora — Mesa Revisora & Faixas
+/transferencia-usados — Transferência de Usados (Seção 3.1)
+/login — Autenticação (com redirecionamento de volta para a rota solicitada após login)
+Navegação Nativa na Sidebar e Topbar
+Os itens do menu lateral passaram a usar links reais (NavLink), destacando automaticamente a rota ativa e atualizando o <title> do navegador e o caminho exibido na Topbar.
+Preservação de Estado entre Rotas
+Os dados carregados, telemetria mTLS/WebSocket, progresso dos módulos, fila da Mesa Revisora e logs permanecem sincronizados ao navegar entre as rotas sem recarregar a sessão.
+Verificações
+Compilação (npm run build): concluída com sucesso.
+Lint: script lint não configurado no package.json.
+Servidor e Rotas: servidor reiniciado na porta 3000; HTTP 200 validado em /, /login, /primeiro-registro, /dashboard, /antifraude, /visao-computacional, /mesa-revisora, /transferencia-usados e /api/poc-ce/health.
+Checkpoint
+agora vamos para os poluentes, no que voce ver, na aba item 1, de poluicao visual, que daria para a gente melhorar? no caso é uma pergunta e nao um pedido de mudanca
+Gemini 4 Hydrogen
+Ran for 23s
+Olhando a tela do Item 1 (/primeiro-registro) com foco em apresentação em projetor e clareza para o fiscal do DETRAN-CE, estes são os principais pontos de poluição visual / redundância que mais pesam hoje:
+1. Repetição excessiva dentro dos 15 cartões da Linha do Tempo (maior poluente)
+Cada cartão mostra o número romano duas vezes (no círculo da trilha e no texto "Etapa I (01/15)"), uma descrição longa, o endpoint completo (/balcaows_dev/v1/...) e o texto "Inspecionar BalcãoWS" repetido 15 vezes.
+Como melhorar: deixar cada card enxuto com Título + Status + 1 linha curta (ou mostrar o endpoint/botão "Ver JSON" apenas no hover ou no card em foco/concluído). O endpoint completo já aparece em destaque dentro do modal ao clicar.
+2. Excesso de blocos antes da ação principal (sobrecarga na 1ª dobra)
+Antes de o avaliador clicar em qualquer coisa, a tela exibe ao mesmo tempo:
+Topbar cheia de indicadores;
+Faixa de Roteiro (3 cards clicáveis Passo 1 / 2 / 3);
+Dossiê do Veículo (título grande + 3 colunas com ~12 campos + botão DANFE);
+Card do Passo 1;
+Card do Passo 2 + alerta amarelo de bloqueio + início dos 15 cartões.
+Como melhorar: compactar o Dossiê em uma barra executiva resumida (Veículo, Placa, Chassi, RENAVAM, Proprietário + botão DANFE + um expandir opcional "Ver dados da NF-e"), trazendo o Passo 1 e o Passo 2 bem mais para cima.
+3. Cadeados e avisos repetidos quando o Passo 2 está bloqueado
+Enquanto o Passo 1 não é autenticado, aparecem ao mesmo tempo: botão com cadeado, banner amarelo grande de aviso e 15 cartões empilhados repetindo o badge "Bloqueado" 15 vezes.
+Como melhorar: manter apenas o banner de bloqueio com o botão "Ir para Passo 1" e manter a lista das 15 etapas recolhida (ou em modo compacto) até o mTLS ser autenticado — reduz drasticamente o scroll inicial e a poluição visual.
+4. Duplicação de informações e botões no Passo 1 e no Passo 3
+Passo 1: quando autenticado, o mesmo status aparece no cabeçalho ("Autenticado HTTP 200"), no banner verde ("Sessão Biométrica Autenticada HTTP 200") e na linha de baixo ("Bearer Token JWT ativo"), além de exibir a string inteira do token JWT em destaque na tela (que para o fiscal não precisa ficar aberta — basta um campo mascarado curto ou apenas o botão "Copiar Token JWT").
+Passo 3: após concluir, aparecem dois botões que abrem o mesmo modal um logo abaixo do outro ("Visualizar CRLV-e Emitido" no topo e "Abrir Modal Ampliado" no banner verde), mesmo com a cédula completa já visível logo abaixo. Deixar apenas uma barra limpa com "Ampliar", "Baixar PDF (PAdES)" e "Imprimir" elimina essa duplicidade.
+5. Excesso de "caixinhas" e controles concorrentes na Topbar
+Em resoluções típicas de projetor (1280×720 / 1366×768), o lado direito da Topbar acumula: mTLS + WS + API, SIMULAÇÃO, JWT: ATIVO, os 3 botões Night | Light | Projetor e Atualizar.
+Como melhorar: transformar o seletor de tema em um único botão/menu compacto, e condensar SIMULAÇÃO + JWT: ATIVO dentro de um único chip ou popover de detalhes na barra de status, deixando a Topbar respirar e dando mais largura ao título da rota.
+6. Contagem de progresso repetida em 3 lugares no Passo 2
+Durante a execução, o progresso aparece na faixa do topo (Executando X/15), na barra Progresso X%, no próprio botão (Executando Etapa X/15...) e na trilha vertical da esquerda. Simplificar mantendo a trilha vertical + texto no botão (ou só uma barra discreta) deixa o cabeçalho do Passo 2 bem mais leve.
+Se quiser, posso aplicar exatamente os pontos que você aprovar (todos de uma vez ou em etapas).
+aprovado
+Gemini 4 Hydrogen
+Ran for 2m 31s
+
+Action history
+Here are key actions taken for the app:
+
+Edited 3 files
+src/ThemeSwitcher.jsx
+src/App.jsx
+src/PrimeiroRegistroOficial.jsx
+Built
+As melhorias de limpeza visual na Topbar e no Item 1 (1º Registro Digital) foram aplicadas e verificadas:
+O que foi ajustado
+Topbar enxuta:
+Os seletores de tema passaram a usar um menu dropdown único (Night, Light, Projetor), reduzindo a largura ocupada no cabeçalho.
+As pílulas separadas de modo (AO VIVO / SIMULAÇÃO) e status JWT foram unificadas em um único indicador compacto (SIM · JWT OK ou AO VIVO · JWT OK com tooltip completo).
+Dossiê Veicular compacto:
+Exibe por padrão apenas os 4 campos-chave (Placa Oficial, Chassi (VIN), RENAVAM / CLA e Adquirente), com o botão "Ficha completa (NF-e)" para expandir os dados técnicos, endereço e DANFE sob demanda.
+Passo 1 (Autenticação mTLS + JWT):
+Removida a caixa permanente com o token JWT bruto; a confirmação agora mostra apenas o estado autenticado com o botão "Ver JWT" (para expandir/ocultar o token quando necessário) e "Copiar Token JWT".
+Passo 2 (Rito em 15 Etapas):
+Antes da autenticação do Passo 1, os 15 cartões bloqueados ficam ocultos atrás do aviso de bloqueio, com a opção "Ver prévia das 15 etapas".
+Removida a barra de progresso duplicada do cabeçalho do Passo 2 e a repetição visual de protocolo/placa.
+Nos cartões das 15 etapas, foram removidos o prefixo redundante "Etapa I..XV" (mantendo o índice (01/15) limpo) e o rodapé fixo repetido em todos os blocos, substituído por uma dica discreta ao passar o mouse (GET/POST · JSON) preservando o modal de inspeção ao clicar.
+Passo 3 (CRLV-e Digital):
+Removido o botão duplicado de modal dentro do banner de conclusão (mantendo as ações principais no cabeçalho) e simplificado o estado de espera antes da finalização do rito.
+Verificações executadas
+Build: compile_applet concluído com sucesso (Build succeeded - the applet is compiled). Nota: o comando de lint retornou ausência de script "lint" configurado no projeto.
+Servidor e rotas: dev server reiniciado e verificado com retorno HTTP 200 em /, /primeiro-registro, /dashboard, /antifraude, /visao-computacional, /mesa-revisora, /transferencia-usados, nos 3 CSS independentes de tema e nos endpoints da API local.
+Checkpoint
+o time sleep jogue pra 1 segundo mesmo ta, e encaminhei a logo do ceara, voce joga no public e coloca la na Conclusão & Cédula do CRLV-e Digital Oficial
+logo-ceara.png
+logo-ceara.png
+Gemini 4 Hydrogen
+Ran for 51s
+
+Action history
+Here are key actions taken for the app:
+
+Edited 1 file
+src/PrimeiroRegistroOficial.jsx
+Built
+As alterações foram aplicadas e verificadas:
+Intervalo do rito em 15 etapas: o tempo de pausa entre cada etapa foi ajustado de 1,5s para 1 segundo (1000 ms), mantendo o acompanhamento automático por scroll suave em cada cartão.
+Brasão oficial do Ceará no CRLV-e: a imagem enviada foi disponibilizada na pasta pública e aplicada no cabeçalho da Cédula do CRLV-e Digital Oficial (tanto no Passo 3 quanto no modal ampliado), substituindo o ícone vetorial anterior.
+Verificações executadas
+Build: compile_applet concluído com sucesso (Build succeeded - the applet is compiled). Nota: o comando de lint retornou ausência de script "lint" configurado no projeto.
+Servidor e ativo: dev server reiniciado e verificado com retorno HTTP 200 na rota do Primeiro Registro e na imagem oficial do brasão do Ceará.
+Checkpoint
+vamos da um gas a mais no crlv ? mandei como é ele no brasil, que é o Conclusão & Cédula do CRLV-e Digital Oficial
+image.png
+image.png
+Gemini 4 Hydrogen
+Ran for 1m 52s
+
+Action history
+Here are key actions taken for the app:
+
+Edited 1 file
+src/PrimeiroRegistroOficial.jsx
+Built
+A cédula CRLV-e Digital Oficial (Passo 3 e modal ampliado) foi redesenhada seguindo fielmente o layout oficial brasileiro adaptado ao Governo do Estado do Ceará / DETRAN-CE:
+O que foi atualizado
+Cabeçalho oficial escuro: barra superior com o Brasão do Ceará, títulos do Governo do Estado do Ceará · Secretaria da Infraestrutura e Trânsito · DETRAN-CE e assinatura ce.gov.br.
+Estrutura em 4 quadrantes com dobras pontilhadas:
+Superior esquerdo: identificação DETRAN - CE, RENAVAM, Placa (NEV1A26), Exercício (2026), Ano Fabricação/Modelo, Nº do CRV, QR Code VIO ampliado com a legenda vertical "Valide este QRCode com app Vio", Código de Segurança CLA, CAT, Marca/Modelo/Versão, Espécie/Tipo, Placa Anterior/UF, Chassi, Cor Predominante e Combustível.
+Superior direito: Categoria, Capacidade, Potência/Cilindrada, Peso Bruto Total, Motor, CMT, Eixos, Lotação, Carroceria, Nome e CPF/CNPJ do proprietário, Local/Data, selo de assinatura digital PAdES DETRAN-CE e o quadro Dados do Seguro DPVAT (Tarif, Quitação, Pagamento e repasses).
+Metade inferior em caixas emolduradas: quadros dedicados para Observações do Veículo, Mensagens DETRAN-CE e Informações do Seguro DPVAT com selo de averbação no RENAVAM e hash SHA-256.
+Área de visualização alargada: tanto o documento exibido na página quanto o modal ampliado foram expandidos para comportar confortavelmente a grade em duas colunas e manter a impressão limpa.
+Verificações executadas
+Build: compile_applet concluído com sucesso (Build succeeded - the applet is compiled). Nota: o comando de lint retornou ausência de script "lint" configurado no projeto.
+Servidor e rota: dev server reiniciado e verificado com retorno HTTP 200 na rota do Primeiro Registro e na imagem oficial do brasão do Ceará.
+Checkpoint
+Implement an auto-scroll feature in 'PrimeiroRegistroOficial.jsx' that triggers a smooth scroll animation to center each of the 15 operation cards within the viewport as they progress, ensuring the active step is always visible to the fiscal during the 1s interval.
+Gemini 4 Hydrogen
+Ran for 0s
+Faça upgrade para continuar o fluxo
+Você atingiu o limite diário. Espere até ele ser redefinido ou faça upgrade para continuar e aproveitar vários outros benefícios.
+Suggestions

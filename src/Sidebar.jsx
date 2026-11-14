@@ -98,9 +98,9 @@ function SidebarContent({
       <div className="flex-1 overflow-y-auto px-2.5 py-4 space-y-3">
         {(!collapsed || isMobile) && (
           <div className="px-2 flex items-center justify-between text-[11px]">
-            <span className="font-semibold text-[var(--text-muted)]">Módulos PoC</span>
+            <span className="font-semibold text-[var(--text-muted)]">Módulos PoC Atual</span>
             <span className="font-mono font-bold text-[var(--accent-text)] tabular-nums">
-              {completedCount}/{tabs.length}
+              {completedCount}/{tabs.filter((t) => !t.upcoming).length}
             </span>
           </div>
         )}
@@ -155,6 +155,8 @@ function SidebarContent({
                             className={`text-xs font-semibold truncate ${
                               isActive
                                 ? 'text-[var(--text-primary)]'
+                                : tab.upcoming
+                                ? 'text-[var(--text-muted)] group-hover:text-[var(--text-secondary)]'
                                 : 'text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]'
                             }`}
                           >
@@ -169,6 +171,11 @@ function SidebarContent({
                               }`}
                             >
                               {mesaCount}
+                            </span>
+                          )}
+                          {tab.upcoming && (
+                            <span className="font-mono text-[9px] px-1.5 py-0.5 rounded bg-[var(--bg-surface-alt)] border border-[var(--border-subtle)] text-[var(--text-muted)] shrink-0">
+                              Em prod.
                             </span>
                           )}
                         </div>
@@ -246,7 +253,10 @@ export default function Sidebar({
   onLogout
 }) {
   const statusMap = Object.fromEntries(statusItems.map((item) => [item.id, item]))
-  const completedCount = statusItems.filter((item) => item.status === 'complete').length
+  const activeTabIds = new Set(tabs.filter((t) => !t.upcoming).map((t) => t.id))
+  const completedCount = statusItems.filter(
+    (item) => activeTabIds.has(item.id) && item.status === 'complete'
+  ).length
 
   return (
     <>

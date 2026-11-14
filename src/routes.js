@@ -41,7 +41,8 @@ export const MODULE_ROUTES = [
   {
     id: 'etapa1',
     path: '/transferencia-usados',
-    label: 'Transferência de Usados (Seção 3.1)',
+    label: 'Item 2 · Transferência de Usados',
+    upcoming: true,
     icon: ArrowLeftRight
   }
 ]

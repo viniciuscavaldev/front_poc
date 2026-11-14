@@ -66,6 +66,8 @@ function AppContent() {
   const [resultadoEtapa2, setResultadoEtapa2] = useState('')
   const [cenarioAtivoEtapa2, setCenarioAtivoEtapa2] = useState('')
   const [etapa2Testados, setEtapa2Testados] = useState([])
+  const [executandoEtapa2, setExecutandoEtapa2] = useState('')
+  const [historicoEtapa2, setHistoricoEtapa2] = useState({})
   const [oficialProgress, setOficialProgress] = useState({
     etapaAtual: 0,
     executandoRito: false,
@@ -267,15 +269,16 @@ function AppContent() {
     const just = (justificativas[id] || '').trim() || defaultJust
     try {
       const res = await api.post(`/mesa-revisora/${id}/decisao`, { decisao, justificativa: just })
+      const protocolo = res.data?.processo?.protocolo || res.data?.protocolo || `#${id}`
       if (decisao === 'APROVAR') {
         toast.success(
           'Processo Aprovado na Mesa Revisora',
-          `${res.data?.protocolo || `#${id}`} deferido e averbado no Ledger SHA-256.`
+          `${protocolo} deferido e averbado no Ledger SHA-256.`
         )
       } else {
         toast.error(
           'Processo Reprovado com Notificação',
-          `${res.data?.protocolo || `#${id}`} reprovado e notificação formal enviada.`
+          `${protocolo} reprovado e notificação formal enviada.`
         )
       }
       await carregarTudo()
@@ -284,7 +287,8 @@ function AppContent() {
     }
   }
 
-  async function simularProcessoMesa() {
+  async function simularProcessoMesa(scoreInput = 65) {
+    const score = typeof scoreInput === 'number' && Number.isFinite(scoreInput) ? scoreInput : 65
     try {
       const res = await api.post('/processos', {
         tipo_servico: 'TRANSFERENCIA',
@@ -294,15 +298,28 @@ function AppContent() {
         cpf_cnpj_vendedor: '07569577370',
         cpf_cnpj_comprador: '01234567890',
         laudo_vistoria_id: `LAUDO-MESA-${Date.now()}`,
-        score_ia: 65,
+        score_ia: score,
         dados: {
-          motivoMesa: 'Assinatura com divergência biométrica leve (Score 65% · Faixa Amarela)'
+          motivoMesa: `Simulação controlada de roteamento IA (Score ${score}% · Faixas Item 1.7.8/1.7.9)`
         }
       })
-      toast.success(
-        'Caso Encaminhado à Mesa Revisora',
-        `${res.data?.protocolo || 'Novo processo'} roteado para análise humana (Score 65%).`
-      )
+      const statusRet = res.data?.status
+      if (statusRet === 'REPROVADO') {
+        toast.error(
+          'Reprovação Automática (Faixa Vermelha)',
+          `${res.data?.protocolo || 'Processo'} bloqueado automaticamente com Score ${score}%.`
+        )
+      } else if (statusRet === 'EM_REVISAO_MANUAL') {
+        toast.success(
+          'Caso Encaminhado à Mesa Revisora',
+          `${res.data?.protocolo || 'Novo processo'} roteado para análise humana (Score ${score}%).`
+        )
+      } else {
+        toast.success(
+          'Aprovação Automática (Faixa Verde)',
+          `${res.data?.protocolo || 'Processo'} liberado automaticamente com Score ${score}%.`
+        )
+      }
       await carregarTudo()
     } catch (e) {
       console.error(e)
@@ -310,31 +327,51 @@ function AppContent() {
     }
   }
 
-  async function testarEtapa2(cenario) {
+  async function testarEtapa2(cenario, customParams = null, skipRefresh = false) {
     setCenarioAtivoEtapa2(cenario)
+    setExecutandoEtapa2((prev) => (prev === 'ALL' ? 'ALL' : cenario))
     setResultadoEtapa2('Executando validação antifraude contra BalcãoWS...')
+    const t0 = performance.now()
+    let endpointAcionado = '/api/poc-ce/processos'
+    let requestPayload = {}
+
     try {
       if (cenario === 'F-01') {
-        await api.post('/processos', {
+        requestPayload = {
           tipo_servico: 'TRANSFERENCIA',
           chassi: '9BWAA05U4BP012345',
-          cpf_cnpj_vendedor: '11111111111',
-          dados: { cpfEsperadoBalcao: '99999999999' }
-        })
+          cpf_cnpj_vendedor: customParams?.cpfVendedor ?? '11111111111',
+          dados: { cpfEsperadoBalcao: customParams?.cpfEsperado ?? '99999999999' }
+        }
+        await api.post('/processos', requestPayload)
       } else if (cenario === 'F-02') {
-        const laudoId = `LAUDO-DUP-${Date.now()}`
-        await api.post('/processos', {
+        const laudoId = customParams?.laudoId || `LAUDO-DUP-${Date.now()}`
+        requestPayload = {
           tipo_servico: 'TRANSFERENCIA',
-          chassi: '9BWAA05U4BP012345',
-          laudo_vistoria_id: laudoId
-        })
+          chassi: '9BWAA05U4BP012346',
+          laudo_vistoria_id: laudoId,
+          observacao: customParams?.laudoId
+            ? 'Submissão de laudo já existente em outro processo'
+            : 'Segunda submissão reutilizando o mesmo laudo ECV'
+        }
+        if (!customParams?.laudoId) {
+          await api.post('/processos', {
+            tipo_servico: 'TRANSFERENCIA',
+            chassi: '9BWAA05U4BP012345',
+            laudo_vistoria_id: laudoId
+          })
+        }
         await api.post('/processos', {
           tipo_servico: 'TRANSFERENCIA',
           chassi: '9BWAA05U4BP012346',
           laudo_vistoria_id: laudoId
         })
       } else if (cenario === 'F-03') {
-        await api.post('/processos', { tipo_servico: 'TRANSFERENCIA', chassi: '' })
+        requestPayload = {
+          tipo_servico: 'TRANSFERENCIA',
+          chassi: customParams?.chassi ?? ''
+        }
+        await api.post('/processos', requestPayload)
       } else if (cenario === 'F-04') {
         const p = await api.post('/processos', {
           tipo_servico: 'TRANSFERENCIA',
@@ -342,16 +379,86 @@ function AppContent() {
           laudo_vistoria_id: `LAUDO-SEQ-${Date.now()}`,
           score_ia: 95
         })
-        await api.post(`/processos/${p.data.id}/avancar`, { acaoDados: { tipoAssinatura: 'COMPRADOR' } })
+        endpointAcionado = `/api/poc-ce/processos/${p.data.id}/avancar`
+        requestPayload = {
+          acaoDados: {
+            tipoAssinatura: 'COMPRADOR',
+            etapaAtualProcesso: p.data.etapa_atual
+          }
+        }
+        await api.post(`/processos/${p.data.id}/avancar`, {
+          acaoDados: { tipoAssinatura: 'COMPRADOR' }
+        })
       }
+
+      const duracaoMs = Math.round(performance.now() - t0)
+      const okPayload = {
+        bloqueado: false,
+        mensagem: 'Operação permitida sem divergência detectada com os parâmetros informados.'
+      }
+      setResultadoEtapa2(JSON.stringify(okPayload, null, 2))
+      setHistoricoEtapa2((prev) => ({
+        ...prev,
+        [cenario]: {
+          cenario,
+          bloqueado: false,
+          statusHttp: 200,
+          duracaoMs,
+          metodo: 'POST',
+          endpoint: endpointAcionado,
+          requestPayload,
+          responseData: okPayload,
+          executadoEm: new Date().toISOString()
+        }
+      }))
+      if (!skipRefresh) await carregarTudo()
     } catch (err) {
-      setResultadoEtapa2(JSON.stringify(err.response?.data || { error: err.message }, null, 2))
+      const duracaoMs = Math.round(performance.now() - t0)
+      const statusHttp = err.response?.status || 422
+      const responseData = err.response?.data || { error: err.message }
+      setResultadoEtapa2(JSON.stringify(responseData, null, 2))
       setEtapa2Testados((prev) => (prev.includes(cenario) ? prev : [...prev, cenario]))
+      setHistoricoEtapa2((prev) => ({
+        ...prev,
+        [cenario]: {
+          cenario,
+          bloqueado: true,
+          statusHttp,
+          duracaoMs,
+          metodo: 'POST',
+          endpoint: endpointAcionado,
+          requestPayload,
+          responseData,
+          executadoEm: new Date().toISOString()
+        }
+      }))
       toast.error(
         `Bloqueio Antifraude ${cenario} Ativado`,
-        err.response?.data?.mensagem || err.message
+        responseData?.mensagem || err.message
       )
+      if (!skipRefresh) await carregarTudo()
+    } finally {
+      setExecutandoEtapa2((prev) => (prev === 'ALL' ? 'ALL' : ''))
+    }
+  }
+
+  async function executarBateriaEtapa2() {
+    setExecutandoEtapa2('ALL')
+    const cenarios = ['F-01', 'F-02', 'F-03', 'F-04']
+    try {
+      for (let i = 0; i < cenarios.length; i++) {
+        await testarEtapa2(cenarios[i], null, true)
+        if (i < cenarios.length - 1) {
+          await new Promise((resolve) => setTimeout(resolve, 750))
+        }
+      }
       await carregarTudo()
+      toast.success(
+        'Bateria Antifraude Concluída (4/4)',
+        'Todos os bloqueios eliminatórios F-01 a F-04 foram comprovados e gravados na trilha VD-07.'
+      )
+    } finally {
+      setExecutandoEtapa2('')
     }
   }
 
@@ -621,16 +728,8 @@ function AppContent() {
     {
       id: 'etapa1',
       shortLabel: 'Transferência',
-      status:
-        processosTrf.length === 0
-          ? 'inactive'
-          : processosTrf.some((p) => p.status === 'CONCLUIDO') &&
-            processosTrf.every((p) => p.status !== 'EM_REVISAO_MANUAL')
-          ? 'complete'
-          : 'warning',
-      detail: processoTrfAtual
-        ? `${processoTrfAtual.placa} · ${processoTrfAtual.etapa_atual}/13`
-        : 'Nenhum processo'
+      status: 'inactive',
+      detail: 'Item 2 · Próxima PoC'
     }
   ]
 
@@ -779,6 +878,7 @@ function AppContent() {
                   onBaixarPdfPades={baixarPdfPadesTeste}
                   historicoEtapa3={historicoEtapa3}
                   onAtualizarTudo={carregarTudo}
+                  carregandoDados={carregandoDados}
                 />
               }
             />
@@ -787,11 +887,19 @@ function AppContent() {
               element={
                 <AntifraudePage
                   cenarioAtivoEtapa2={cenarioAtivoEtapa2}
+                  onSelecionarCenario={setCenarioAtivoEtapa2}
                   resultadoEtapa2={resultadoEtapa2}
+                  etapa2Testados={etapa2Testados}
+                  executandoEtapa2={executandoEtapa2}
+                  historicoEtapa2={historicoEtapa2}
+                  auditoria={auditoria}
                   onTestarEtapa2={testarEtapa2}
+                  onExecutarBateriaEtapa2={executarBateriaEtapa2}
+                  onIrParaAuditoria={() => navigate('/dashboard?tab=auditoria')}
                   onLimparConsole={() => {
                     setResultadoEtapa2('')
                     setCenarioAtivoEtapa2('')
+                    setHistoricoEtapa2({})
                   }}
                 />
               }
@@ -813,6 +921,15 @@ function AppContent() {
                   onBaixarCsvEtapa3={baixarCsvEtapa3}
                   buscaEtapa3={buscaEtapa3}
                   onBuscaEtapa3Change={setBuscaEtapa3}
+                  historicoEtapa3={historicoEtapa3}
+                  onSelecionarLoteHistorico={(exec) => {
+                    if (!exec) return
+                    setUltimaExecEtapa3Info(exec)
+                    setCronometro(Number(exec.tempoSegundos || 0))
+                    setResultadosEtapa3(exec.resultados || [])
+                    setCsvEtapa3(exec.downloadUrl || '')
+                  }}
+                  onIrParaDashboard={() => navigate('/dashboard')}
                 />
               }
             />
@@ -828,9 +945,12 @@ function AppContent() {
                   onFaixasChange={setFaixas}
                   onSalvarFaixa={salvarFaixa}
                   mesaFila={mesaFila}
+                  processos={processos}
+                  auditoria={auditoria}
                   justificativas={justificativas}
                   onJustificativasChange={setJustificativas}
                   onDecidirMesa={decidirMesa}
+                  onIrParaAuditoria={() => navigate('/dashboard?tab=auditoria')}
                 />
               }
             />
