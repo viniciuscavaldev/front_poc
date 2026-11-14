@@ -581,15 +581,21 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
     } else {
       setTourPasso(1)
     }
-    toast.info(
-      '🎯 Modo Guia Interativo Ativado',
-      'Siga o holofote verde nos botões para conduzir a homologação oficial da PoC.'
-    )
+    const notificar = toast?.info || toast?.success
+    if (notificar) {
+      notificar(
+        '🎯 Modo Guia Interativo Ativado',
+        'Siga o holofote verde nos botões para conduzir a homologação oficial da PoC.'
+      )
+    }
   }
 
   function encerrarTour() {
     setTourAtivo(false)
-    toast.info('Guia Interativo Encerrado', 'Você pode reativar o guia a qualquer momento pelo botão no topo.')
+    const notificar = toast?.info || toast?.success
+    if (notificar) {
+      notificar('Guia Interativo Encerrado', 'Você pode reativar o guia a qualquer momento pelo botão no topo.')
+    }
   }
 
   function concluirTour() {
@@ -1753,10 +1759,13 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
           <div
             className="fixed inset-0 z-40 bg-slate-950/75 backdrop-blur-[2px] transition-opacity duration-300"
             onClick={() => {
-              toast.info(
-                'Guia Interativo Ativo',
-                'Clique no botão iluminado pelo holofote para continuar a demonstração da PoC.'
-              )
+              const notificar = toast?.info || toast?.success
+              if (notificar) {
+                notificar(
+                  'Guia Interativo Ativo',
+                  'Clique no botão iluminado pelo holofote para continuar a demonstração da PoC.'
+                )
+              }
             }}
           />
 

@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react'
-import { CheckCircle2, XCircle, X, Trash2 } from 'lucide-react'
+import { CheckCircle2, XCircle, Info, AlertTriangle, X, Trash2 } from 'lucide-react'
 
 const ToastContext = createContext(null)
 const STORAGE_KEY = 'necava_persistent_toasts'
@@ -50,6 +50,16 @@ export function ToastProvider({ children }) {
     [addToast]
   )
 
+  const info = useCallback(
+    (title, description = '') => addToast('info', title, description),
+    [addToast]
+  )
+
+  const warning = useCallback(
+    (title, description = '') => addToast('warning', title, description),
+    [addToast]
+  )
+
   const dismissToast = useCallback((id) => {
     setToasts((prev) => prev.filter((t) => t.id !== id))
   }, [])
@@ -59,7 +69,9 @@ export function ToastProvider({ children }) {
   }, [])
 
   return (
-    <ToastContext.Provider value={{ toasts, showToast, success, error, dismissToast, clearToasts }}>
+    <ToastContext.Provider
+      value={{ toasts, showToast, success, error, info, warning, dismissToast, clearToasts }}
+    >
       {children}
 
       {toasts.length > 0 && (
@@ -83,13 +95,19 @@ export function ToastProvider({ children }) {
 
           {toasts.map((t) => {
             const isSuccess = t.type === 'success'
+            const isInfo = t.type === 'info'
+            const isWarning = t.type === 'warning'
             return (
               <div
                 key={t.id}
-                role={isSuccess ? 'status' : 'alert'}
+                role={isSuccess || isInfo ? 'status' : 'alert'}
                 className={`pointer-events-auto animate-toast-in rounded-xl border p-3.5 shadow-2xl backdrop-blur-md bg-[var(--bg-toast)] ${
                   isSuccess
                     ? 'border-emerald-500/60 ring-1 ring-emerald-500/20'
+                    : isInfo
+                    ? 'border-sky-500/60 ring-1 ring-sky-500/20'
+                    : isWarning
+                    ? 'border-amber-500/60 ring-1 ring-amber-500/20'
                     : 'border-red-500/60 ring-1 ring-red-500/20'
                 }`}
               >
@@ -98,11 +116,19 @@ export function ToastProvider({ children }) {
                     className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
                       isSuccess
                         ? 'bg-emerald-500/15 text-[var(--semantic-success-text)] border border-emerald-500/30'
+                        : isInfo
+                        ? 'bg-sky-500/15 text-sky-400 border border-sky-500/30'
+                        : isWarning
+                        ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
                         : 'bg-red-500/15 text-[var(--semantic-danger-text)] border border-red-500/30'
                     }`}
                   >
                     {isSuccess ? (
                       <CheckCircle2 className="w-4 h-4" />
+                    ) : isInfo ? (
+                      <Info className="w-4 h-4" />
+                    ) : isWarning ? (
+                      <AlertTriangle className="w-4 h-4" />
                     ) : (
                       <XCircle className="w-4 h-4" />
                     )}
@@ -114,6 +140,10 @@ export function ToastProvider({ children }) {
                         className={`text-xs font-bold leading-snug ${
                           isSuccess
                             ? 'text-[var(--semantic-success-text)]'
+                            : isInfo
+                            ? 'text-sky-400'
+                            : isWarning
+                            ? 'text-amber-400'
                             : 'text-[var(--semantic-danger-text)]'
                         }`}
                       >
