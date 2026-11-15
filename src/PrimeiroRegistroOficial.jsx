@@ -715,16 +715,10 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
       if (pilotoCanceladoRef.current) return
       setTourPasso(2)
 
+      let pilotoConcluiuReal = concluido
       if (!concluido) {
         setExecutandoRito(true)
-        for (let i = 1; i <= 15; i++) {
-          if (pilotoCanceladoRef.current) {
-            setExecutandoRito(false)
-            return
-          }
-          setEtapaAtual(i)
-          await new Promise((r) => setTimeout(r, 130))
-        }
+        setEtapaAtual(1)
         const { data: ritoRes } = await api.post('/oficial/executar-15-etapas')
         if (onAtualizarDashboard) onAtualizarDashboard()
         setEtapasReais(ritoRes?.etapas || null)
@@ -732,6 +726,7 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
         setStatusFluxoReal(ritoRes?.status || null)
         setEtapaAtual(ritoRes?.etapaAlcancada || 0)
         const realmenteConcluido = ritoRes?.status === 'CONCLUIDO' && ritoRes?.crlvObtido === true
+        pilotoConcluiuReal = realmenteConcluido
         setConcluido(realmenteConcluido)
         setExecutandoRito(false)
         if (pilotoCanceladoRef.current) return
@@ -742,11 +737,20 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
             'Fluxo concluído no DETRAN/CE e CRLV-e obtido via integração.'
           )
         } else {
+          const etapaParada = ritoRes?.etapaAlcancada || 5
           const msgBloqueio = ritoRes?.bloqueios?.[0]?.mensagem || ritoRes?.status || 'Fluxo interrompido pelo DETRAN.'
           ;(toast.warning || toast.info)(
-            `Fluxo interrompido na Etapa ${ritoRes?.etapaAlcancada || '?'} (${ritoRes?.status || 'BLOQUEADO'})`,
+            `Fluxo interrompido na Etapa ${etapaParada} (${ritoRes?.status || 'BLOQUEADO'})`,
             msgBloqueio
           )
+          stepRefs.current[etapaParada]?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          if (pilotoIntervalRef.current) {
+            clearInterval(pilotoIntervalRef.current)
+            pilotoIntervalRef.current = null
+          }
+          setTempoPiloto(Number(((performance.now() - t0) / 1000).toFixed(1)))
+          setPilotoAutomatico(false)
+          return
         }
       }
 
@@ -776,7 +780,7 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
       passo3SectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
 
       // Dispara download automático apenas se o CRLV-e tiver sido obtido pela integração real
-      if (concluido) {
+      if (pilotoConcluiuReal) {
         baixarCrlvPdfAutenticado().catch((err) => {
           console.warn('Erro ao disparar download do CRLV-e:', err)
         })
@@ -907,20 +911,14 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
     setConcluido(false)
     setEtapaAtual(1)
 
-    const stepDelayMs = 1000
-
-    for (let i = 1; i <= 15; i++) {
-      setEtapaAtual(i)
-      await new Promise((r) => setTimeout(r, stepDelayMs))
-    }
-
     try {
       const { data: ritoRes } = await api.post('/oficial/executar-15-etapas')
       if (onAtualizarDashboard) onAtualizarDashboard()
       setEtapasReais(ritoRes?.etapas || null)
       setBloqueiosReais(ritoRes?.bloqueios || [])
       setStatusFluxoReal(ritoRes?.status || null)
-      setEtapaAtual(ritoRes?.etapaAlcancada || 0)
+      const etapaParada = ritoRes?.etapaAlcancada || 0
+      setEtapaAtual(etapaParada)
       const realmenteConcluido = ritoRes?.status === 'CONCLUIDO' && ritoRes?.crlvObtido === true
       setConcluido(realmenteConcluido)
       if (realmenteConcluido) {
@@ -931,11 +929,11 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
       } else {
         const msgBloqueio = ritoRes?.bloqueios?.[0]?.mensagem || ritoRes?.status || 'Fluxo interrompido.'
         ;(toast.warning || toast.info)(
-          `Fluxo interrompido na Etapa ${ritoRes?.etapaAlcancada || '?'} (${ritoRes?.status || 'BLOQUEADO'})`,
+          `Fluxo interrompido na Etapa ${etapaParada || '?'} (${ritoRes?.status || 'BLOQUEADO'})`,
           msgBloqueio
         )
       }
-      if (tourAtivo && tourPasso === 2) {
+      if (realmenteConcluido && tourAtivo && tourPasso === 2) {
         setTimeout(() => {
           setTourPasso(3)
           toast.success(
@@ -947,16 +945,19 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
       if (acompanharScrollRef.current) {
         setTimeout(() => {
           if (!acompanharScrollRef.current) return
-          passo3SectionRef.current?.scrollIntoView({
+          const targetRef = realmenteConcluido
+            ? passo3SectionRef.current
+            : stepRefs.current[etapaParada]
+          targetRef?.scrollIntoView({
             behavior:
               typeof window !== 'undefined' &&
               window.matchMedia &&
               window.matchMedia('(prefers-reduced-motion: reduce)').matches
                 ? 'auto'
                 : 'smooth',
-            block: 'start'
+            block: 'center'
           })
-        }, 520)
+        }, 300)
       }
     } catch (err) {
       console.error(err)
