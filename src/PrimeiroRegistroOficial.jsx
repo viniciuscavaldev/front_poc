@@ -519,6 +519,9 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
   const [acompanharScroll, setAcompanharScroll] = useState(true)
   const acompanharScrollRef = useRef(true)
   const [concluido, setConcluido] = useState(false)
+  const [etapasReais, setEtapasReais] = useState(null)
+  const [bloqueiosReais, setBloqueiosReais] = useState([])
+  const [statusFluxoReal, setStatusFluxoReal] = useState(null)
   const [etapaSelecionada, setEtapaSelecionada] = useState(null)
   const [abaModalInspecao, setAbaModalInspecao] = useState('ambos')
   const [modalCrlv, setModalCrlv] = useState(false)
@@ -722,17 +725,30 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
           setEtapaAtual(i)
           await new Promise((r) => setTimeout(r, 130))
         }
-        await api.post('/oficial/executar-15-etapas')
+        const { data: ritoRes } = await api.post('/oficial/executar-15-etapas')
         if (onAtualizarDashboard) onAtualizarDashboard()
-        setConcluido(true)
+        setEtapasReais(ritoRes?.etapas || null)
+        setBloqueiosReais(ritoRes?.bloqueios || [])
+        setStatusFluxoReal(ritoRes?.status || null)
+        setEtapaAtual(ritoRes?.etapaAlcancada || 0)
+        const realmenteConcluido = ritoRes?.status === 'CONCLUIDO' && ritoRes?.crlvObtido === true
+        setConcluido(realmenteConcluido)
         setExecutandoRito(false)
-      }
-      if (pilotoCanceladoRef.current) return
+        if (pilotoCanceladoRef.current) return
 
-      toast.success(
-        'Passo 2 Concluído (15 Etapas)',
-        'Placa NEV1A26 averbada no RENAVAM 01429817451 no padrão DETRAN-CE.'
-      )
+        if (realmenteConcluido) {
+          toast.success(
+            'Passo 2 Concluído (15 Etapas)',
+            'Fluxo concluído no DETRAN/CE e CRLV-e obtido via integração.'
+          )
+        } else {
+          const msgBloqueio = ritoRes?.bloqueios?.[0]?.mensagem || ritoRes?.status || 'Fluxo interrompido pelo DETRAN.'
+          ;(toast.warning || toast.info)(
+            `Fluxo interrompido na Etapa ${ritoRes?.etapaAlcancada || '?'} (${ritoRes?.status || 'BLOQUEADO'})`,
+            msgBloqueio
+          )
+        }
+      }
 
       // ===== PASSO 3: Inspeção Técnica JSON da Etapa 1 =====
       await new Promise((r) => setTimeout(r, 1200))
@@ -759,10 +775,12 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
 
       passo3SectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
 
-      // Dispara download automático autenticado do PDF oficial assinado
-      baixarCrlvPdfAutenticado().catch((err) => {
-        console.warn('Erro ao disparar download do CRLV-e:', err)
-      })
+      // Dispara download automático apenas se o CRLV-e tiver sido obtido pela integração real
+      if (concluido) {
+        baixarCrlvPdfAutenticado().catch((err) => {
+          console.warn('Erro ao disparar download do CRLV-e:', err)
+        })
+      }
 
       await new Promise((r) => setTimeout(r, 800))
       if (pilotoCanceladoRef.current) return
@@ -897,13 +915,26 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
     }
 
     try {
-      await api.post('/oficial/executar-15-etapas')
+      const { data: ritoRes } = await api.post('/oficial/executar-15-etapas')
       if (onAtualizarDashboard) onAtualizarDashboard()
-      setConcluido(true)
-      toast.success(
-        '1º Registro Concluído (15/15 Etapas)',
-        'Placa NEV1A26 averbada no RENAVAM 01429817451. Cédula CRLV-e disponível no Passo 3.'
-      )
+      setEtapasReais(ritoRes?.etapas || null)
+      setBloqueiosReais(ritoRes?.bloqueios || [])
+      setStatusFluxoReal(ritoRes?.status || null)
+      setEtapaAtual(ritoRes?.etapaAlcancada || 0)
+      const realmenteConcluido = ritoRes?.status === 'CONCLUIDO' && ritoRes?.crlvObtido === true
+      setConcluido(realmenteConcluido)
+      if (realmenteConcluido) {
+        toast.success(
+          '1º Registro Concluído (15/15 Etapas)',
+          'Fluxo concluído no DETRAN/CE e CRLV-e obtido via integração.'
+        )
+      } else {
+        const msgBloqueio = ritoRes?.bloqueios?.[0]?.mensagem || ritoRes?.status || 'Fluxo interrompido.'
+        ;(toast.warning || toast.info)(
+          `Fluxo interrompido na Etapa ${ritoRes?.etapaAlcancada || '?'} (${ritoRes?.status || 'BLOQUEADO'})`,
+          msgBloqueio
+        )
+      }
       if (tourAtivo && tourPasso === 2) {
         setTimeout(() => {
           setTourPasso(3)
@@ -990,7 +1021,7 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
     )
   }
 
-  const etapas = dados.etapasDetalhadas || []
+  const etapas = etapasReais || dados.etapasDetalhadas || []
   const mtlsAutenticado = Boolean(resultadoAoVivo?.sucesso)
   const progressoPercentual = concluido ? 100 : Math.round((etapaAtual / 15) * 100)
 
@@ -1555,10 +1586,14 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
             />
 
             {etapas.map((item, idx) => {
-              const isConcluido =
-                concluido ||
-                etapaAtual > item.etapa ||
-                (etapaAtual === item.etapa && !executandoRito && etapaAtual > 0)
+              const hasRealState = Boolean(item.estado)
+              const isConcluido = hasRealState
+                ? item.estado === 'REAL_OK' || item.estado === 'CONDICIONAL_DISPENSADA'
+                : concluido ||
+                  etapaAtual > item.etapa ||
+                  (etapaAtual === item.etapa && !executandoRito && etapaAtual > 0)
+              const isBloqueado = item.estado === 'BLOQUEADO_DETRAN'
+              const isAguardando = item.estado === 'AGUARDANDO_ACAO'
               const isProcessando = executandoRito && etapaAtual === item.etapa
               const romano = ROMAN_NUMERALS[idx] || String(item.etapa)
 
@@ -1630,9 +1665,17 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
                           <Code2 className="w-3.5 h-3.5" /> {item.metodo} · JSON
                         </span>
 
-                        {isConcluido ? (
+                        {isBloqueado ? (
+                          <span className="flex items-center gap-1 font-mono text-[11px] font-semibold text-rose-400">
+                            Bloqueado DETRAN{item.statusHttp ? ` (HTTP ${item.statusHttp})` : ''}
+                          </span>
+                        ) : isAguardando ? (
+                          <span className="flex items-center gap-1 font-mono text-[11px] font-semibold text-amber-400">
+                            Aguardando Ação{item.statusHttp ? ` (HTTP ${item.statusHttp})` : ''}
+                          </span>
+                        ) : isConcluido ? (
                           <span className="flex items-center gap-1 font-mono text-[11px] font-semibold text-[var(--semantic-success-text)]">
-                            <CheckCircle2 className="w-3.5 h-3.5" /> Concluído
+                            <CheckCircle2 className="w-3.5 h-3.5" /> {item.estado === 'CONDICIONAL_DISPENSADA' ? 'Dispensada' : item.statusHttp ? `Real HTTP ${item.statusHttp}` : 'Concluído'}
                           </span>
                         ) : isProcessando ? (
                           <span className="flex items-center gap-1 font-mono text-[11px] font-semibold text-[var(--semantic-info-text)]">
@@ -1640,15 +1683,20 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
                           </span>
                         ) : (
                           <span className="font-mono text-[11px] text-[var(--text-muted)]">
-                            {mtlsAutenticado ? 'Pendente' : 'Aguardando mTLS'}
+                            {item.estado === 'NAO_EXECUTADA' ? 'Não executada (bloqueio anterior)' : mtlsAutenticado ? 'Pendente' : 'Aguardando mTLS'}
                           </span>
                         )}
                       </div>
                     </div>
 
                     <p className="text-xs text-[var(--text-secondary)] mt-1 leading-relaxed">
-                      {item.desc}
+                      {item.resumo || item.desc}
                     </p>
+                    {item.pendenciaDetran && (
+                      <p className="text-[11px] text-rose-400 mt-1 font-mono">
+                        Pendência DETRAN: {item.pendenciaDetran}
+                      </p>
+                    )}
                   </button>
                 </div>
               )
