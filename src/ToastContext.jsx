@@ -1,9 +1,9 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react'
-import { CheckCircle2, XCircle, Info, AlertTriangle, X, Trash2 } from 'lucide-react'
+import { CheckCircle2, XCircle, Info, AlertTriangle, X, Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
 
 const ToastContext = createContext(null)
 const STORAGE_KEY = 'necava_persistent_toasts'
-const MAX_TOASTS = 5
+const MAX_TOASTS = 10
 
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState(() => {
@@ -15,6 +15,7 @@ export function ToastProvider({ children }) {
       return []
     }
   })
+  const [activeIndex, setActiveIndex] = useState(0)
 
   useEffect(() => {
     try {
@@ -24,6 +25,14 @@ export function ToastProvider({ children }) {
     }
   }, [toasts])
 
+  useEffect(() => {
+    if (toasts.length === 0) {
+      setActiveIndex(0)
+    } else if (activeIndex >= toasts.length) {
+      setActiveIndex(toasts.length - 1)
+    }
+  }, [toasts.length, activeIndex])
+
   const addToast = useCallback((type, title, description = '') => {
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
     const timestamp = new Date().toLocaleTimeString('pt-BR', {
@@ -32,6 +41,7 @@ export function ToastProvider({ children }) {
       second: '2-digit'
     })
     setToasts((prev) => [{ id, type, title, description, timestamp }, ...prev].slice(0, MAX_TOASTS))
+    setActiveIndex(0)
     return id
   }, [])
 
@@ -74,107 +84,129 @@ export function ToastProvider({ children }) {
     >
       {children}
 
-      {toasts.length > 0 && (
-        <aside
-          aria-label="Notificações do sistema"
-          aria-live="polite"
-          className="fixed bottom-4 right-4 z-50 w-[calc(100vw-2rem)] max-w-sm flex flex-col gap-2.5 pointer-events-none"
-        >
-          {toasts.length > 1 && (
-            <div className="flex justify-end pointer-events-auto animate-toast-in">
-              <button
-                type="button"
-                onClick={clearToasts}
-                className="px-2.5 py-1 rounded-lg bg-[var(--bg-surface)] hover:bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] text-[11px] font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] flex items-center gap-1.5 cursor-pointer shadow-lg backdrop-blur-md transition-colors"
-              >
-                <Trash2 className="w-3 h-3" />
-                Limpar notificações ({toasts.length})
-              </button>
-            </div>
-          )}
+      {toasts.length > 0 && (() => {
+        const currentToast = toasts[activeIndex] || toasts[0]
+        const isSuccess = currentToast.type === 'success'
+        const isInfo = currentToast.type === 'info'
+        const isWarning = currentToast.type === 'warning'
 
-          {toasts.map((t) => {
-            const isSuccess = t.type === 'success'
-            const isInfo = t.type === 'info'
-            const isWarning = t.type === 'warning'
-            return (
-              <div
-                key={t.id}
-                role={isSuccess || isInfo ? 'status' : 'alert'}
-                className={`pointer-events-auto animate-toast-in rounded-xl border p-3.5 shadow-2xl backdrop-blur-md bg-[var(--bg-toast)] ${
-                  isSuccess
-                    ? 'border-emerald-500/60 ring-1 ring-emerald-500/20'
-                    : isInfo
-                    ? 'border-sky-500/60 ring-1 ring-sky-500/20'
-                    : isWarning
-                    ? 'border-amber-500/60 ring-1 ring-amber-500/20'
-                    : 'border-red-500/60 ring-1 ring-red-500/20'
-                }`}
-              >
-                <div className="flex items-start gap-3">
-                  <div
-                    className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
-                      isSuccess
-                        ? 'bg-emerald-500/15 text-[var(--semantic-success-text)] border border-emerald-500/30'
-                        : isInfo
-                        ? 'bg-sky-500/15 text-sky-400 border border-sky-500/30'
-                        : isWarning
-                        ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
-                        : 'bg-red-500/15 text-[var(--semantic-danger-text)] border border-red-500/30'
-                    }`}
-                  >
-                    {isSuccess ? (
-                      <CheckCircle2 className="w-4 h-4" />
-                    ) : isInfo ? (
-                      <Info className="w-4 h-4" />
-                    ) : isWarning ? (
-                      <AlertTriangle className="w-4 h-4" />
-                    ) : (
-                      <XCircle className="w-4 h-4" />
-                    )}
+        return (
+          <aside
+            aria-label="Notificações do sistema"
+            aria-live="polite"
+            className="fixed bottom-4 right-4 z-50 w-[calc(100vw-2rem)] max-w-sm pointer-events-none"
+          >
+            <div
+              key={currentToast.id}
+              role={isSuccess || isInfo ? 'status' : 'alert'}
+              className={`pointer-events-auto animate-toast-in rounded-xl border p-3.5 shadow-2xl backdrop-blur-md bg-[var(--bg-toast)] ${
+                isSuccess
+                  ? 'border-emerald-500/60 ring-1 ring-emerald-500/20'
+                  : isInfo
+                  ? 'border-sky-500/60 ring-1 ring-sky-500/20'
+                  : isWarning
+                  ? 'border-amber-500/60 ring-1 ring-amber-500/20'
+                  : 'border-red-500/60 ring-1 ring-red-500/20'
+              }`}
+            >
+              <div className="flex items-start gap-3">
+                <div
+                  className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                    isSuccess
+                      ? 'bg-emerald-500/15 text-[var(--semantic-success-text)] border border-emerald-500/30'
+                      : isInfo
+                      ? 'bg-sky-500/15 text-sky-400 border border-sky-500/30'
+                      : isWarning
+                      ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                      : 'bg-red-500/15 text-[var(--semantic-danger-text)] border border-red-500/30'
+                  }`}
+                >
+                  {isSuccess ? (
+                    <CheckCircle2 className="w-4 h-4" />
+                  ) : isInfo ? (
+                    <Info className="w-4 h-4" />
+                  ) : isWarning ? (
+                    <AlertTriangle className="w-4 h-4" />
+                  ) : (
+                    <XCircle className="w-4 h-4" />
+                  )}
+                </div>
+
+                <div className="flex-1 min-w-0 space-y-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span
+                      className={`text-xs font-bold leading-snug truncate ${
+                        isSuccess
+                          ? 'text-[var(--semantic-success-text)]'
+                          : isInfo
+                          ? 'text-sky-400'
+                          : isWarning
+                          ? 'text-amber-400'
+                          : 'text-[var(--semantic-danger-text)]'
+                      }`}
+                    >
+                      {currentToast.title}
+                    </span>
+                    <span className="font-mono text-[10px] text-[var(--text-muted)] tabular-nums shrink-0">
+                      {currentToast.timestamp}
+                    </span>
                   </div>
 
-                  <div className="flex-1 min-w-0 space-y-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <span
-                        className={`text-xs font-bold leading-snug ${
-                          isSuccess
-                            ? 'text-[var(--semantic-success-text)]'
-                            : isInfo
-                            ? 'text-sky-400'
-                            : isWarning
-                            ? 'text-amber-400'
-                            : 'text-[var(--semantic-danger-text)]'
-                        }`}
-                      >
-                        {t.title}
-                      </span>
-                      <span className="font-mono text-[10px] text-[var(--text-muted)] tabular-nums shrink-0">
-                        {t.timestamp}
-                      </span>
-                    </div>
+                  {currentToast.description && (
+                    <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed break-words">
+                      {currentToast.description}
+                    </p>
+                  )}
+                </div>
 
-                    {t.description && (
-                      <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed break-words">
-                        {t.description}
-                      </p>
-                    )}
+                <button
+                  type="button"
+                  onClick={() => dismissToast(currentToast.id)}
+                  aria-label="Fechar notificação"
+                  className="p-1 rounded-md text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-hover)] cursor-pointer transition-colors shrink-0"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {toasts.length > 1 && (
+                <div className="mt-2.5 pt-2 border-t border-[var(--border-subtle)] flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setActiveIndex((prev) => (prev - 1 + toasts.length) % toasts.length)}
+                      aria-label="Notificação anterior"
+                      className="p-1 rounded-md text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-hover)] cursor-pointer transition-colors"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" />
+                    </button>
+                    <span className="font-mono text-[10px] text-[var(--text-muted)] tabular-nums px-1">
+                      {activeIndex + 1} / {toasts.length}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setActiveIndex((prev) => (prev + 1) % toasts.length)}
+                      aria-label="Próxima notificação"
+                      className="p-1 rounded-md text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-hover)] cursor-pointer transition-colors"
+                    >
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
                   </div>
 
                   <button
                     type="button"
-                    onClick={() => dismissToast(t.id)}
-                    aria-label="Fechar notificação"
-                    className="p-1 rounded-md text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-hover)] cursor-pointer transition-colors shrink-0"
+                    onClick={clearToasts}
+                    className="px-2 py-0.5 rounded-md text-[10px] font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-hover)] flex items-center gap-1 cursor-pointer transition-colors"
                   >
-                    <X className="w-3.5 h-3.5" />
+                    <Trash2 className="w-3 h-3" />
+                    Limpar tudo
                   </button>
                 </div>
-              </div>
-            )
-          })}
-        </aside>
-      )}
+              )}
+            </div>
+          </aside>
+        )
+      })()}
     </ToastContext.Provider>
   )
 }

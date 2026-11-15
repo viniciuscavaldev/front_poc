@@ -793,9 +793,9 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
       setTempoPiloto(tempoFinal)
       setPilotoAutomatico(false)
 
-      toast.success(
-        '🏆 Simulação Automatizada Concluída!',
-        `Todos os 4 passos finalizados com 100% de sucesso em ${tempoFinal}s. CRLV-e assinado emitido!`
+      toast.info(
+        'Roteiro Automatizado Finalizado',
+        `Execução encerrada em ${tempoFinal}s. Confira na linha do tempo o estado real de cada etapa.`
       )
     } catch (err) {
       console.error('Erro no piloto automático:', err)
