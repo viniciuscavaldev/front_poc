@@ -192,6 +192,16 @@ function AppContent() {
     } else {
       document.title = `${activeRouteObj.label} — NECAVA · DETRAN/CE`
     }
+    try {
+      let icon = document.querySelector("link[rel~='icon']")
+      if (!icon) {
+        icon = document.createElement('link')
+        icon.rel = 'icon'
+        document.head.appendChild(icon)
+      }
+      icon.type = 'image/png'
+      icon.href = '/favicon.png?v=2'
+    } catch (_) {}
   }, [auth, activeRouteObj])
 
   function capturarGeo() {
