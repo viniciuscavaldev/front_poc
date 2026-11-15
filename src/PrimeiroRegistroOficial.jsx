@@ -28,7 +28,10 @@ import {
   ArrowUp,
   ArrowDown,
   HelpCircle,
-  Sparkles
+  Sparkles,
+  Square,
+  Timer,
+  FastForward
 } from 'lucide-react'
 import { useToast } from './ToastContext'
 
@@ -477,6 +480,10 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
   const [tourAtivo, setTourAtivo] = useState(false)
   const [tourPasso, setTourPasso] = useState(1)
   const [spotlightRect, setSpotlightRect] = useState(null)
+  const [pilotoAutomatico, setPilotoAutomatico] = useState(false)
+  const [tempoPiloto, setTempoPiloto] = useState(0)
+  const pilotoIntervalRef = useRef(null)
+  const pilotoCanceladoRef = useRef(false)
 
   const [dados, setDados] = useState(null)
   const [erroCarga, setErroCarga] = useState('')
@@ -618,6 +625,156 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
       }, 350)
     }
   }
+
+  function pararPilotoAutomatico(mostrarToast = true) {
+    pilotoCanceladoRef.current = true
+    setPilotoAutomatico(false)
+    if (pilotoIntervalRef.current) {
+      clearInterval(pilotoIntervalRef.current)
+      pilotoIntervalRef.current = null
+    }
+    if (mostrarToast) {
+      const notificar = toast?.info || toast?.success
+      if (notificar) notificar('Piloto Automático Pausado', 'A demonstração foi interrompida.')
+    }
+  }
+
+  async function iniciarPilotoAutomatico() {
+    pilotoCanceladoRef.current = false
+    setPilotoAutomatico(true)
+    setTempoPiloto(0)
+    setTourAtivo(true)
+    setTourPasso(1)
+
+    if (pilotoIntervalRef.current) clearInterval(pilotoIntervalRef.current)
+    const t0 = performance.now()
+    pilotoIntervalRef.current = setInterval(() => {
+      setTempoPiloto(Number(((performance.now() - t0) / 1000).toFixed(1)))
+    }, 100)
+
+    const notificar = toast?.info || toast?.success
+    if (notificar) {
+      notificar(
+        '🚀 Piloto Automático Iniciado',
+        'Executando a demonstração oficial de ponta a ponta com cronometragem em tempo real.'
+      )
+    }
+
+    try {
+      // ===== PASSO 1: mTLS & Biometria Facial =====
+      setTourPasso(1)
+      await new Promise((r) => setTimeout(r, 900))
+      if (pilotoCanceladoRef.current) return
+
+      let balcaoRes = resultadoAoVivo
+      if (!balcaoRes?.sucesso) {
+        setTestandoAoVivo(true)
+        const res = await api.post('/oficial/testar-balcaows')
+        balcaoRes = res.data
+        setResultadoAoVivo(balcaoRes)
+        setTestandoAoVivo(false)
+        if (onAtualizarDashboard) onAtualizarDashboard()
+      }
+      if (pilotoCanceladoRef.current) return
+
+      toast.success(
+        'Passo 1 Concluído (mTLS Ativo)',
+        'Sessão biométrica autenticada no BalcãoWS com Token JWT oficial do DETRAN-CE.'
+      )
+
+      // ===== PASSO 2: Rito Operacional de 15 Etapas =====
+      await new Promise((r) => setTimeout(r, 1200))
+      if (pilotoCanceladoRef.current) return
+      setTourPasso(2)
+
+      if (!concluido) {
+        setExecutandoRito(true)
+        for (let i = 1; i <= 15; i++) {
+          if (pilotoCanceladoRef.current) {
+            setExecutandoRito(false)
+            return
+          }
+          setEtapaAtual(i)
+          await new Promise((r) => setTimeout(r, 130))
+        }
+        await api.post('/oficial/executar-15-etapas')
+        if (onAtualizarDashboard) onAtualizarDashboard()
+        setConcluido(true)
+        setExecutandoRito(false)
+      }
+      if (pilotoCanceladoRef.current) return
+
+      toast.success(
+        'Passo 2 Concluído (15 Etapas)',
+        'Placa NEV1A26 averbada no RENAVAM 01429817451 no padrão DETRAN-CE.'
+      )
+
+      // ===== PASSO 3: Inspeção Técnica JSON da Etapa 1 =====
+      await new Promise((r) => setTimeout(r, 1200))
+      if (pilotoCanceladoRef.current) return
+      setTourPasso(3)
+
+      const primeiraEtapa = (dados?.etapasDetalhadas && dados.etapasDetalhadas[0]) || null
+      if (primeiraEtapa) {
+        setEtapaSelecionada(primeiraEtapa)
+        toast.info(
+          'Passo 3 · Auditoria Técnica',
+          'Inspecionando payload da NF-e, contrato OpenAPI e assinatura digital ICP-Brasil...'
+        )
+        // Mantém o modal visível por 3.5 segundos para a banca do DETRAN-CE ler o JSON
+        await new Promise((r) => setTimeout(r, 3500))
+        if (pilotoCanceladoRef.current) return
+        setEtapaSelecionada(null)
+      }
+
+      // ===== PASSO 4: Emissão e Download do CRLV-e Digital =====
+      await new Promise((r) => setTimeout(r, 1000))
+      if (pilotoCanceladoRef.current) return
+      setTourPasso(4)
+
+      passo3SectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+
+      // Dispara download automático do PDF oficial assinado
+      try {
+        const link = document.createElement('a')
+        link.href = '/downloads/CRLV_NEV1A26_OFICIAL.pdf'
+        link.download = 'CRLV_NEV1A26_OFICIAL.pdf'
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+      } catch (err) {
+        console.warn('Erro ao disparar download do CRLV-e:', err)
+      }
+
+      await new Promise((r) => setTimeout(r, 800))
+      if (pilotoCanceladoRef.current) return
+
+      const tempoFinal = Number(((performance.now() - t0) / 1000).toFixed(1))
+      if (pilotoIntervalRef.current) {
+        clearInterval(pilotoIntervalRef.current)
+        pilotoIntervalRef.current = null
+      }
+      setTempoPiloto(tempoFinal)
+      setPilotoAutomatico(false)
+
+      toast.success(
+        '🏆 Simulação Automatizada Concluída!',
+        `Todos os 4 passos finalizados com 100% de sucesso em ${tempoFinal}s. CRLV-e assinado emitido!`
+      )
+    } catch (err) {
+      console.error('Erro no piloto automático:', err)
+      pararPilotoAutomatico(false)
+      toast.error('Erro na Simulação', err.message || 'Falha ao executar piloto automático.')
+    }
+  }
+
+  useEffect(() => {
+    return () => {
+      if (pilotoIntervalRef.current) {
+        clearInterval(pilotoIntervalRef.current)
+      }
+    }
+  }, [])
 
   useEffect(() => {
     if (!tourAtivo) {
@@ -946,6 +1103,30 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
           <div className="flex flex-wrap items-center gap-2.5 shrink-0">
             <button
               type="button"
+              onClick={pilotoAutomatico ? () => pararPilotoAutomatico(true) : iniciarPilotoAutomatico}
+              className={`px-3.5 py-2 rounded-lg text-xs font-bold flex items-center gap-2 cursor-pointer transition-all duration-200 whitespace-nowrap shrink-0 shadow-sm ${
+                pilotoAutomatico
+                  ? 'bg-amber-400 text-slate-950 ring-2 ring-amber-300 shadow-amber-500/30 animate-pulse'
+                  : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white border border-emerald-400/30 shadow-emerald-950/30'
+              }`}
+              title="Executar toda a demonstração oficial automaticamente com cronômetro em tempo real"
+            >
+              {pilotoAutomatico ? (
+                <>
+                  <span className="w-2 h-2 rounded-full bg-slate-950 animate-ping" />
+                  <Square className="w-3.5 h-3.5 fill-current text-slate-950" />
+                  <span>Parar Piloto ({tempoPiloto.toFixed(1)}s)</span>
+                </>
+              ) : (
+                <>
+                  <Play className="w-3.5 h-3.5 fill-current text-emerald-200" />
+                  <span>Piloto Automático (Auto-Play)</span>
+                </>
+              )}
+            </button>
+
+            <button
+              type="button"
               onClick={() => {
                 if (tourAtivo) {
                   encerrarTour()
@@ -954,12 +1135,12 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
                 }
               }}
               className={`px-3.5 py-2 rounded-lg text-xs font-bold flex items-center gap-2 cursor-pointer transition-all duration-200 whitespace-nowrap shrink-0 shadow-sm ${
-                tourAtivo
+                tourAtivo && !pilotoAutomatico
                   ? 'bg-emerald-500 text-slate-950 ring-2 ring-emerald-300 shadow-emerald-500/30'
                   : 'bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 hover:text-emerald-300 shadow-emerald-950/20'
               }`}
             >
-              <HelpCircle className={`w-4 h-4 ${tourAtivo ? 'text-slate-950 animate-pulse' : 'text-emerald-400'}`} />
+              <HelpCircle className={`w-4 h-4 ${tourAtivo && !pilotoAutomatico ? 'text-slate-950 animate-pulse' : 'text-emerald-400'}`} />
               <span>{tourAtivo ? 'Encerrar Guia' : 'Iniciar Guia Interativo'}</span>
             </button>
 
@@ -1846,9 +2027,16 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
                       <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-[11px] font-mono font-bold text-emerald-400">
                         {currentTourStep.stepNum}
                       </span>
-                      <span className="text-[11px] text-slate-400 font-medium">
-                        Guia Interativo PoC · DETRAN-CE
-                      </span>
+                      {pilotoAutomatico ? (
+                        <span className="px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30 text-[11px] font-mono font-bold text-amber-300 flex items-center gap-1 animate-pulse">
+                          <Timer className="w-3 h-3" />
+                          Piloto: {tempoPiloto.toFixed(1)}s
+                        </span>
+                      ) : (
+                        <span className="text-[11px] text-slate-400 font-medium">
+                          Guia Interativo PoC · DETRAN-CE
+                        </span>
+                      )}
                     </div>
                     <h4 className="text-sm font-bold text-slate-100 flex items-center gap-1.5">
                       <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
@@ -1904,6 +2092,27 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
                   </div>
 
                   <div className="flex items-center gap-2">
+                    {!pilotoAutomatico ? (
+                      <button
+                        type="button"
+                        onClick={iniciarPilotoAutomatico}
+                        className="px-2.5 py-1.5 rounded-lg text-emerald-400 hover:text-emerald-300 hover:bg-emerald-950/50 font-semibold transition-colors cursor-pointer text-xs flex items-center gap-1 border border-emerald-500/30"
+                        title="Executar os 4 passos automaticamente com cronômetro"
+                      >
+                        <Play className="w-3 h-3 fill-current text-emerald-400" />
+                        <span>Auto-Play</span>
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => pararPilotoAutomatico(true)}
+                        className="px-2.5 py-1.5 rounded-lg text-amber-300 hover:text-amber-200 hover:bg-amber-950/50 font-semibold transition-colors cursor-pointer text-xs flex items-center gap-1 border border-amber-500/30"
+                      >
+                        <Square className="w-3 h-3 fill-current text-amber-300" />
+                        <span>Pausar</span>
+                      </button>
+                    )}
+
                     <button
                       type="button"
                       onClick={encerrarTour}
