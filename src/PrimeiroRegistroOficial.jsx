@@ -35,7 +35,32 @@ import {
 } from 'lucide-react'
 import { useToast } from './ToastContext'
 
-const api = axios.create({ baseURL: '/api/poc-ce', timeout: 15000 })
+const api = axios.create({ baseURL: '/api/poc-ce', timeout: 25000 })
+api.interceptors.request.use((config) => {
+  try {
+    const saved = localStorage.getItem('necava_auth')
+    const parsed = saved ? JSON.parse(saved) : null
+    if (parsed?.token) {
+      config.headers.Authorization = `Bearer ${parsed.token}`
+    }
+  } catch (_) {}
+  return config
+})
+
+async function baixarCrlvPdfAutenticado() {
+  const response = await api.get('/oficial/crlv-pdf', { responseType: 'blob' })
+  const blobUrl = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }))
+  try {
+    const link = document.createElement('a')
+    link.href = blobUrl
+    link.download = 'CRLV_NEV1A26_OFICIAL.pdf'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  } finally {
+    window.URL.revokeObjectURL(blobUrl)
+  }
+}
 
 const ROMAN_NUMERALS = [
   'I',
@@ -734,17 +759,10 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
 
       passo3SectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
 
-      // Dispara download automático do PDF oficial assinado
-      try {
-        const link = document.createElement('a')
-        link.href = '/downloads/CRLV_NEV1A26_OFICIAL.pdf'
-        link.download = 'CRLV_NEV1A26_OFICIAL.pdf'
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
-      } catch (err) {
+      // Dispara download automático autenticado do PDF oficial assinado
+      baixarCrlvPdfAutenticado().catch((err) => {
         console.warn('Erro ao disparar download do CRLV-e:', err)
-      }
+      })
 
       await new Promise((r) => setTimeout(r, 800))
       if (pilotoCanceladoRef.current) return
@@ -1683,14 +1701,14 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
                 <Eye className="w-4 h-4" />
                 Visualizar CRLV-e Emitido
               </button>
-              <a
-                href="/downloads/CRLV_NEV1A26_OFICIAL.pdf"
-                download="CRLV_NEV1A26_OFICIAL.pdf"
+              <button
+                type="button"
+                onClick={() => baixarCrlvPdfAutenticado().catch((err) => console.warn('Erro ao baixar CRLV-e:', err))}
                 className="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-xs font-bold text-white flex items-center gap-2 transition-colors whitespace-nowrap"
               >
                 <Download className="w-4 h-4" />
                 Baixar PDF Assinado (PAdES)
-              </a>
+              </button>
               <button
                 type="button"
                 onClick={() => window.print()}
@@ -1914,13 +1932,13 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
                 Homologação DETRAN/CE · Item 1 da Prova de Conceito
               </span>
               <div className="flex flex-wrap items-center gap-2">
-                <a
-                  href="/downloads/CRLV_NEV1A26_OFICIAL.pdf"
-                  download="CRLV_NEV1A26_OFICIAL.pdf"
+                <button
+                  type="button"
+                  onClick={() => baixarCrlvPdfAutenticado().catch((err) => console.warn('Erro ao baixar CRLV-e:', err))}
                   className="px-4 py-2 rounded-lg bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] text-[var(--accent-on-primary)] font-semibold text-xs flex items-center gap-1.5 transition-colors whitespace-nowrap"
                 >
                   <Download className="w-3.5 h-3.5" /> Baixar PDF Assinado (PAdES)
-                </a>
+                </button>
                 <button
                   type="button"
                   onClick={() => window.print()}
