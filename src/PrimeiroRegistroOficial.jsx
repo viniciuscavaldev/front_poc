@@ -529,6 +529,12 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
   const [mostrarDossieCompleto, setMostrarDossieCompleto] = useState(false)
   const [mostrarTokenJwt, setMostrarTokenJwt] = useState(false)
   const [mostrarEtapasBloqueadas, setMostrarEtapasBloqueadas] = useState(false)
+  const nfeFileInputRef = useRef(null)
+  const [arquivoNfe, setArquivoNfe] = useState(null)
+  const [chaveNfeInformada, setChaveNfeInformada] = useState('')
+  const [autorizaOcrIa, setAutorizaOcrIa] = useState(false)
+  const [analisandoNfe, setAnalisandoNfe] = useState(false)
+  const [analiseNfe, setAnaliseNfe] = useState(null)
 
   useEffect(() => {
     acompanharScrollRef.current = acompanharScroll
@@ -652,6 +658,12 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
         )
       }, 350)
     }
+  }
+
+  function invalidarResultadoDaNota() {
+    setAnaliseNfe(null)
+    setEtapaAtual(0)
+    setConcluido(false)
   }
 
   function payloadNfeParaFluxo() {
