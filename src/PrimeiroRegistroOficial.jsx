@@ -883,6 +883,41 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
     }
   }
 
+  async function analisarNfeSelecionada() {
+    if (!arquivoNfe && !chaveNfeInformada.trim()) {
+      toast.error('Informe a NF-e', 'Envie um XML/PDF ou digite a chave de acesso de 44 dígitos.')
+      return
+    }
+    setAnalisandoNfe(true)
+    setAnaliseNfe(null)
+    try {
+      let response
+      if (arquivoNfe) {
+        const form = new FormData()
+        form.append('arquivo', arquivoNfe)
+        if (chaveNfeInformada.trim()) form.append('chaveAcesso', chaveNfeInformada)
+        form.append('autorizaOcrIa', autorizaOcrIa ? 'true' : 'false')
+        response = await api.post('/oficial/nfe/analisar', form)
+      } else {
+        response = await api.post('/oficial/nfe/analisar', { chaveAcesso: chaveNfeInformada })
+      }
+      setAnaliseNfe(response.data)
+      if (response.data.status === 'CHAVE_COMPATIVEL_PENDENTE_VALIDACAO_DETRAN') {
+        toast.info('Chave compatível com a massa', 'Como nenhum arquivo foi enviado, chassi e adquirente só serão confirmados no XML retornado pelo DETRAN.')
+      } else if (response.data.sucesso) {
+        toast.success('NF-e conferida', 'A chave e os dados extraídos correspondem à massa de homologação. A validade fiscal ainda será confirmada pelo DETRAN.')
+      } else {
+        toast.error('NF-e não corresponde à massa da PoC', 'Confira as divergências exibidas antes de iniciar qualquer chamada do fluxo.')
+      }
+    } catch (err) {
+      const result = err.response?.data
+      setAnaliseNfe(result?.verificacoes ? result : { error: result?.error || err.message })
+      toast.error('Não foi possível analisar a NF-e', result?.error || 'Confira o arquivo e tente novamente.')
+    } finally {
+      setAnalisandoNfe(false)
+    }
+  }
+
   async function testarBalcaoWs() {
     setTestandoAoVivo(true)
     try {
