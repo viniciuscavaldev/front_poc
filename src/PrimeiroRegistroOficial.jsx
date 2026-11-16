@@ -43,7 +43,7 @@ api.interceptors.request.use((config) => {
     if (parsed?.token) {
       config.headers.Authorization = `Bearer ${parsed.token}`
     }
-  } catch (_) {}
+  } catch (_) { }
   return config
 })
 
@@ -134,9 +134,8 @@ function CrlvField({ label, value, mono = false, highlight = false, className = 
         {label}
       </div>
       <div
-        className={`text-[10.5px] sm:text-[11px] font-extrabold uppercase leading-tight mt-0.5 truncate ${
-          mono ? 'font-mono tabular-nums' : ''
-        } ${highlight ? 'text-[#006B3F]' : 'text-slate-950'}`}
+        className={`text-[10.5px] sm:text-[11px] font-extrabold uppercase leading-tight mt-0.5 truncate ${mono ? 'font-mono tabular-nums' : ''
+          } ${highlight ? 'text-[#006B3F]' : 'text-slate-950'}`}
       >
         {value}
       </div>
@@ -739,10 +738,10 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
         } else {
           const etapaParada = ritoRes?.etapaAlcancada || 5
           const msgBloqueio = ritoRes?.bloqueios?.[0]?.mensagem || ritoRes?.status || 'Fluxo interrompido pelo DETRAN.'
-          ;(toast.warning || toast.info)(
-            `Fluxo interrompido na Etapa ${etapaParada} (${ritoRes?.status || 'BLOQUEADO'})`,
-            msgBloqueio
-          )
+            ; (toast.warning || toast.info)(
+              `Fluxo interrompido na Etapa ${etapaParada} (${ritoRes?.status || 'BLOQUEADO'})`,
+              msgBloqueio
+            )
           stepRefs.current[etapaParada]?.scrollIntoView({ behavior: 'smooth', block: 'center' })
           if (pilotoIntervalRef.current) {
             clearInterval(pilotoIntervalRef.current)
@@ -928,10 +927,10 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
         )
       } else {
         const msgBloqueio = ritoRes?.bloqueios?.[0]?.mensagem || ritoRes?.status || 'Fluxo interrompido.'
-        ;(toast.warning || toast.info)(
-          `Fluxo interrompido na Etapa ${etapaParada || '?'} (${ritoRes?.status || 'BLOQUEADO'})`,
-          msgBloqueio
-        )
+          ; (toast.warning || toast.info)(
+            `Fluxo interrompido na Etapa ${etapaParada || '?'} (${ritoRes?.status || 'BLOQUEADO'})`,
+            msgBloqueio
+          )
       }
       if (realmenteConcluido && tourAtivo && tourPasso === 2) {
         setTimeout(() => {
@@ -951,8 +950,8 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
           targetRef?.scrollIntoView({
             behavior:
               typeof window !== 'undefined' &&
-              window.matchMedia &&
-              window.matchMedia('(prefers-reduced-motion: reduce)').matches
+                window.matchMedia &&
+                window.matchMedia('(prefers-reduced-motion: reduce)').matches
                 ? 'auto'
                 : 'smooth',
             block: 'center'
@@ -1033,8 +1032,8 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
       statusText: mtlsAutenticado
         ? 'Sessão JWT ativa'
         : resultadoAoVivo && !resultadoAoVivo.sucesso
-        ? 'Pendência de retorno'
-        : 'Aguardando verificação',
+          ? 'Pendência de retorno'
+          : 'Aguardando verificação',
       state: mtlsAutenticado ? 'complete' : 'current',
       onClick: () => irParaPasso(mtlsSectionRef, () => mtlsButtonRef.current?.focus())
     },
@@ -1044,10 +1043,10 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
       statusText: !mtlsAutenticado
         ? 'Bloqueado até Passo 1'
         : concluido
-        ? '15/15 etapas averbadas'
-        : executandoRito
-        ? `Executando ${etapaAtual}/15`
-        : 'Liberado para execução',
+          ? '15/15 etapas averbadas'
+          : executandoRito
+            ? `Executando ${etapaAtual}/15`
+            : 'Liberado para execução',
       state: concluido ? 'complete' : mtlsAutenticado ? 'current' : 'locked',
       onClick: () => irParaPasso(passo2SectionRef)
     },
@@ -1077,23 +1076,21 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
                 key={step.num}
                 type="button"
                 onClick={step.onClick}
-                className={`text-left px-3.5 py-2.5 rounded-lg border transition-colors duration-200 flex items-center justify-between gap-3 cursor-pointer focus-visible:outline-2 focus-visible:outline-[var(--accent-primary)] ${
-                  isComplete
-                    ? 'bg-[var(--semantic-success-bg)] border-[var(--semantic-success-border)]'
-                    : isCurrent
+                className={`text-left px-3.5 py-2.5 rounded-lg border transition-colors duration-200 flex items-center justify-between gap-3 cursor-pointer focus-visible:outline-2 focus-visible:outline-[var(--accent-primary)] ${isComplete
+                  ? 'bg-[var(--semantic-success-bg)] border-[var(--semantic-success-border)]'
+                  : isCurrent
                     ? 'bg-[var(--bg-surface-alt)] border-[var(--accent-border)]'
                     : 'bg-[var(--bg-surface-alt)] border-[var(--border-subtle)] opacity-80'
-                }`}
+                  }`}
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <span
-                    className={`w-7 h-7 rounded-lg flex items-center justify-center font-mono text-xs font-bold shrink-0 ${
-                      isComplete
-                        ? 'bg-[var(--accent-primary)] text-[var(--accent-on-primary)]'
-                        : isCurrent
+                    className={`w-7 h-7 rounded-lg flex items-center justify-center font-mono text-xs font-bold shrink-0 ${isComplete
+                      ? 'bg-[var(--accent-primary)] text-[var(--accent-on-primary)]'
+                      : isCurrent
                         ? 'bg-[var(--accent-soft)] text-[var(--accent-text)] border border-[var(--accent-border)]'
                         : 'bg-[var(--btn-secondary-bg)] text-[var(--text-muted)] border border-[var(--border-subtle)]'
-                    }`}
+                      }`}
                   >
                     {isComplete ? (
                       <Check className="w-4 h-4" />
@@ -1110,8 +1107,8 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
                           isComplete
                             ? 'text-[var(--semantic-success-text)]'
                             : isCurrent
-                            ? 'text-[var(--accent-text)]'
-                            : 'text-[var(--text-muted)]'
+                              ? 'text-[var(--accent-text)]'
+                              : 'text-[var(--text-muted)]'
                         }
                       >
                         {step.num}
@@ -1154,11 +1151,10 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
             <button
               type="button"
               onClick={pilotoAutomatico ? () => pararPilotoAutomatico(true) : iniciarPilotoAutomatico}
-              className={`px-3.5 py-2 rounded-lg text-xs font-bold flex items-center gap-2 cursor-pointer transition-all duration-200 whitespace-nowrap shrink-0 shadow-sm ${
-                pilotoAutomatico
-                  ? 'bg-amber-400 text-slate-950 ring-2 ring-amber-300 shadow-amber-500/30 animate-pulse'
-                  : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white border border-emerald-400/30 shadow-emerald-950/30'
-              }`}
+              className={`px-3.5 py-2 rounded-lg text-xs font-bold flex items-center gap-2 cursor-pointer transition-all duration-200 whitespace-nowrap shrink-0 shadow-sm ${pilotoAutomatico
+                ? 'bg-amber-400 text-slate-950 ring-2 ring-amber-300 shadow-amber-500/30 animate-pulse'
+                : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white border border-emerald-400/30 shadow-emerald-950/30'
+                }`}
               title="Executar toda a demonstração oficial automaticamente com cronômetro em tempo real"
             >
               {pilotoAutomatico ? (
@@ -1184,11 +1180,10 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
                   iniciarTour()
                 }
               }}
-              className={`px-3.5 py-2 rounded-lg text-xs font-bold flex items-center gap-2 cursor-pointer transition-all duration-200 whitespace-nowrap shrink-0 shadow-sm ${
-                tourAtivo && !pilotoAutomatico
-                  ? 'bg-emerald-500 text-slate-950 ring-2 ring-emerald-300 shadow-emerald-500/30'
-                  : 'bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 hover:text-emerald-300 shadow-emerald-950/20'
-              }`}
+              className={`px-3.5 py-2 rounded-lg text-xs font-bold flex items-center gap-2 cursor-pointer transition-all duration-200 whitespace-nowrap shrink-0 shadow-sm ${tourAtivo && !pilotoAutomatico
+                ? 'bg-emerald-500 text-slate-950 ring-2 ring-emerald-300 shadow-emerald-500/30'
+                : 'bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 hover:text-emerald-300 shadow-emerald-950/20'
+                }`}
             >
               <HelpCircle className={`w-4 h-4 ${tourAtivo && !pilotoAutomatico ? 'text-slate-950 animate-pulse' : 'text-emerald-400'}`} />
               <span>{tourAtivo ? 'Encerrar Guia' : 'Iniciar Guia Interativo'}</span>
@@ -1218,6 +1213,135 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
             </a>
           </div>
         </div>
+
+        <section id="nfe-upload-poc" className="rounded-xl border border-[var(--accent-border)] bg-[var(--accent-soft)]/30 p-4 sm:p-5 space-y-4">
+          <div className="flex items-start gap-3">
+            <div className="rounded-lg p-2 bg-[var(--accent-soft)] text-[var(--accent-text)]">
+              <Upload className="w-5 h-5" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="font-bold text-sm text-[var(--text-primary)]">Etapa I · Receber a Nota Fiscal</h3>
+              <p className="text-xs text-[var(--text-secondary)] mt-1">
+                Envie o XML da NF-e, o DANFE em PDF ou informe a chave de acesso. Vamos extrair e comparar chave, chassi e adquirente com a massa de homologação antes de consultar o DETRAN.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(260px,0.8fr)_auto] gap-3 items-end">
+            <label className="block space-y-1.5">
+              <span className="text-[11px] font-semibold text-[var(--text-secondary)]">Arquivo XML ou DANFE PDF</span>
+              <input
+                ref={nfeFileInputRef}
+                type="file"
+                accept=".xml,.pdf,application/xml,text/xml,application/pdf"
+                disabled={executandoRito || analisandoNfe || pilotoAutomatico}
+                onChange={(event) => {
+                  setArquivoNfe(event.target.files?.[0] || null)
+                  invalidarResultadoDaNota()
+                  setAutorizaOcrIa(false)
+                }}
+                className="block w-full text-xs text-[var(--text-secondary)] file:mr-3 file:rounded-md file:border file:border-[var(--border-strong)] file:bg-[var(--bg-surface)] file:px-3 file:py-2 file:text-xs file:font-semibold file:text-[var(--text-primary)] hover:file:bg-[var(--bg-surface-alt)]"
+              />
+                <span className="block text-[10px] text-[var(--text-muted)]">Máximo 15 MB. PDF digitalizado pode usar OCR assistido.</span>
+            </label>
+            <label className="block space-y-1.5">
+              <span className="text-[11px] font-semibold text-[var(--text-secondary)]">Chave de acesso (opcional com arquivo)</span>
+              <input
+                value={chaveNfeInformada}
+                disabled={executandoRito || analisandoNfe || pilotoAutomatico}
+                onChange={(event) => {
+                  setChaveNfeInformada(event.target.value.replace(/\D/g, '').slice(0, 44))
+                  invalidarResultadoDaNota()
+                }}
+                inputMode="numeric"
+                maxLength={44}
+                placeholder="44 dígitos"
+                className="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--bg-surface)] px-3 py-2.5 text-xs font-mono tracking-wide text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)]"
+              />
+            </label>
+            <button
+              type="button"
+              onClick={analisarNfeSelecionada}
+              disabled={executandoRito || pilotoAutomatico || analisandoNfe || (!arquivoNfe && !chaveNfeInformada.trim())}
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-[var(--accent-primary)] px-4 py-2.5 text-xs font-bold text-[var(--accent-on-primary)] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {analisandoNfe ? <RefreshCw className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+              Conferir documento
+            </button>
+            {dados?.nfe?.chaveAcesso && (
+              <button
+                type="button"
+                onClick={async () => {
+                  const chaveOficial = dados.nfe.chaveAcesso
+                  setArquivoNfe(null)
+                  setChaveNfeInformada(chaveOficial)
+                  setAnalisandoNfe(true)
+                  setAnaliseNfe(null)
+                  try {
+                    const response = await api.post('/oficial/nfe/analisar', { chaveAcesso: chaveOficial })
+                    setAnaliseNfe(response.data)
+                    toast.info('NF-e oficial da PoC carregada', 'Chave da massa de homologação conferida. O XML será validado no DETRAN.')
+                  } catch (err) {
+                    toast.error('Falha ao carregar NF-e da PoC', err.response?.data?.error || err.message)
+                  } finally {
+                    setAnalisandoNfe(false)
+                  }
+                }}
+                disabled={executandoRito || pilotoAutomatico || analisandoNfe}
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-[var(--border-strong)] bg-[var(--bg-surface)] hover:bg-[var(--bg-surface-hover)] px-3.5 py-2.5 text-xs font-semibold text-[var(--text-primary)] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Usar NF-e oficial da PoC
+              </button>
+            )}
+          </div>
+
+          {arquivoNfe?.name.toLowerCase().endsWith('.pdf') && (
+            <label className="flex items-start gap-2 text-[10px] text-[var(--text-secondary)] cursor-pointer">
+              <input
+                type="checkbox"
+                checked={autorizaOcrIa}
+                onChange={(event) => setAutorizaOcrIa(event.target.checked)}
+                className="mt-0.5 accent-emerald-500"
+              />
+              <span>Autorizo enviar este PDF ao serviço Gemini configurado apenas se o servidor não conseguir extrair texto. A IA só sugere os campos; as regras da PoC comparam chave, chassi e CPF e a situação fiscal ainda depende do DETRAN.</span>
+            </label>
+          )}
+
+          {arquivoNfe && <p className="text-[11px] text-[var(--text-muted)]">Arquivo selecionado: <span className="font-semibold text-[var(--text-secondary)]">{arquivoNfe.name}</span></p>}
+
+          {analiseNfe && (
+            <div role="status" aria-live="polite" className={`rounded-lg border p-3 space-y-2 ${analiseNfe.status === 'CHAVE_COMPATIVEL_PENDENTE_VALIDACAO_DETRAN' ? 'border-[var(--semantic-warning-border)] bg-[var(--semantic-warning-bg)]' : analiseNfe.sucesso ? 'border-[var(--semantic-success-border)] bg-[var(--semantic-success-bg)]' : 'border-[var(--semantic-danger-border)] bg-[var(--semantic-danger-bg)]'}`}>
+              <div className="flex items-center gap-2 text-xs font-bold">
+                {analiseNfe.status === 'CHAVE_COMPATIVEL_PENDENTE_VALIDACAO_DETRAN'
+                  ? <AlertCircle className="w-4 h-4 text-[var(--semantic-warning-text)]" />
+                  : analiseNfe.sucesso
+                  ? <CheckCircle2 className="w-4 h-4 text-[var(--semantic-success-text)]" />
+                  : <AlertCircle className="w-4 h-4 text-[var(--semantic-danger-text)]" />}
+                <span className={analiseNfe.status === 'CHAVE_COMPATIVEL_PENDENTE_VALIDACAO_DETRAN' ? 'text-[var(--semantic-warning-text)]' : analiseNfe.sucesso ? 'text-[var(--semantic-success-text)]' : 'text-[var(--semantic-danger-text)]'}>
+                  {analiseNfe.error || (analiseNfe.status === 'CHAVE_COMPATIVEL_PENDENTE_VALIDACAO_DETRAN' ? 'Chave reconhecida; campos do veículo serão conferidos no retorno do DETRAN' : analiseNfe.sucesso ? 'Documento compatível com a massa da PoC' : 'Documento divergente ou incompleto')}
+                </span>
+              </div>
+              {analiseNfe.verificacoes?.length > 0 && (
+                <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1">
+                  {analiseNfe.verificacoes.map((check) => (
+                    <li key={check.campo} className="flex items-start gap-1.5 text-[10px]">
+                      <span className={check.ok ? 'text-[var(--semantic-success-text)]' : 'text-[var(--semantic-danger-text)]'}>{check.ok ? '✓' : '✕'}</span>
+                      <span className="text-[var(--text-secondary)]"><strong>{check.campo}:</strong> {check.ok ? 'confere' : `esperado ${check.esperado}; recebido ${check.encontrado}`}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {analiseNfe.campos && (
+                <dl className="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-1 border-t border-[var(--border-subtle)] pt-2 text-[10px]">
+                  <div><dt className="text-[var(--text-muted)]">Chave extraída</dt><dd className="font-mono text-[var(--text-secondary)] break-all">{analiseNfe.campos.chaveAcesso || 'Não encontrada'}</dd></div>
+                  <div><dt className="text-[var(--text-muted)]">Chassi extraído</dt><dd className="font-mono text-[var(--text-secondary)]">{analiseNfe.campos.chassi || 'Não encontrado'}</dd></div>
+                  <div><dt className="text-[var(--text-muted)]">Documento do adquirente</dt><dd className="font-mono text-[var(--text-secondary)]">{analiseNfe.campos.cpfDestinatario || analiseNfe.campos.cnpjDestinatario || 'Não encontrado'}</dd></div>
+                </dl>
+              )}
+              <p className="text-[10px] text-[var(--text-muted)]">{analiseNfe.observacao || 'Esta conferência local não substitui a consulta de situação fiscal ao BalcãoWS/DETRAN.'}</p>
+            </div>
+          )}
+        </section>
 
         {/* Faixa Resumo de Dados-Chave (4 campos essenciais) */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-3 border-t border-[var(--border-subtle)] text-xs">
@@ -1315,11 +1439,10 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
       <section
         id="passo-1-mtls"
         ref={mtlsSectionRef}
-        className={`scroll-mt-20 rounded-xl bg-[var(--bg-surface)] border p-6 space-y-5 transition-colors duration-200 ${
-          mtlsAutenticado
-            ? 'border-[var(--semantic-success-border)]'
-            : 'border-[var(--accent-border)]'
-        }`}
+        className={`scroll-mt-20 rounded-xl bg-[var(--bg-surface)] border p-6 space-y-5 transition-colors duration-200 ${mtlsAutenticado
+          ? 'border-[var(--semantic-success-border)]'
+          : 'border-[var(--accent-border)]'
+          }`}
       >
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="space-y-1.5">
@@ -1329,22 +1452,20 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
                 ·
               </span>
               <span
-                className={`font-semibold ${
-                  mtlsAutenticado
-                    ? 'text-[var(--semantic-success-text)]'
-                    : 'text-[var(--text-secondary)]'
-                }`}
+                className={`font-semibold ${mtlsAutenticado
+                  ? 'text-[var(--semantic-success-text)]'
+                  : 'text-[var(--text-secondary)]'
+                  }`}
               >
                 {mtlsAutenticado ? 'Autenticado (HTTP 200)' : 'Pré-requisito obrigatório de segurança'}
               </span>
             </div>
             <h3 className="text-lg font-bold text-[var(--text-primary)] flex items-center gap-2">
               <Lock
-                className={`w-4 h-4 ${
-                  mtlsAutenticado
-                    ? 'text-[var(--semantic-success-text)]'
-                    : 'text-[var(--semantic-info-text)]'
-                }`}
+                className={`w-4 h-4 ${mtlsAutenticado
+                  ? 'text-[var(--semantic-success-text)]'
+                  : 'text-[var(--semantic-info-text)]'
+                  }`}
               />
               Camada de Segurança mTLS &amp; Sessão Biométrica
             </h3>
@@ -1362,22 +1483,20 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
             type="button"
             onClick={testarBalcaoWs}
             disabled={testandoAoVivo}
-            className={`px-5 py-2.5 rounded-lg text-xs font-bold flex items-center gap-2 cursor-pointer transition-all duration-200 whitespace-nowrap shrink-0 self-start lg:self-auto ${
-              mtlsAutenticado
-                ? 'bg-[var(--btn-secondary-bg)] hover:bg-[var(--btn-secondary-hover)] border border-[var(--btn-secondary-border)] text-[var(--semantic-success-text)]'
-                : 'bg-sky-600 hover:bg-sky-500 disabled:opacity-60 text-white'
-            } ${
-              tourAtivo && tourPasso === 1
+            className={`px-5 py-2.5 rounded-lg text-xs font-bold flex items-center gap-2 cursor-pointer transition-all duration-200 whitespace-nowrap shrink-0 self-start lg:self-auto ${mtlsAutenticado
+              ? 'bg-[var(--btn-secondary-bg)] hover:bg-[var(--btn-secondary-hover)] border border-[var(--btn-secondary-border)] text-[var(--semantic-success-text)]'
+              : 'bg-sky-600 hover:bg-sky-500 disabled:opacity-60 text-white'
+              } ${tourAtivo && tourPasso === 1
                 ? 'relative z-50 ring-4 ring-emerald-400 ring-offset-4 ring-offset-slate-900 shadow-2xl shadow-emerald-500/50 scale-[1.02]'
                 : ''
-            }`}
+              }`}
           >
             <RefreshCw className={`w-4 h-4 ${testandoAoVivo ? 'animate-spin' : ''}`} />
             {testandoAoVivo
               ? 'Autenticando mTLS...'
               : mtlsAutenticado
-              ? 'Revalidar BalcãoWS (mTLS)'
-              : 'Executar Verificação BalcãoWS (mTLS)'}
+                ? 'Revalidar BalcãoWS (mTLS)'
+                : 'Executar Verificação BalcãoWS (mTLS)'}
           </button>
         </div>
 
@@ -1449,9 +1568,8 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
       <section
         id="passo-2-rito"
         ref={passo2SectionRef}
-        className={`scroll-mt-20 rounded-xl bg-[var(--bg-surface)] border p-6 space-y-5 transition-colors duration-200 ${
-          concluido ? 'border-[var(--semantic-success-border)]' : 'border-[var(--border-subtle)]'
-        }`}
+        className={`scroll-mt-20 rounded-xl bg-[var(--bg-surface)] border p-6 space-y-5 transition-colors duration-200 ${concluido ? 'border-[var(--semantic-success-border)]' : 'border-[var(--border-subtle)]'
+          }`}
       >
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-[var(--border-subtle)]">
           <div className="space-y-1">
@@ -1477,11 +1595,10 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
                 aria-checked={acompanharScroll}
                 onClick={() => setAcompanharScroll((prev) => !prev)}
                 title="Acompanhar automaticamente com scroll suave conforme cada etapa avança"
-                className={`px-3 py-2 rounded-lg border text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap shrink-0 ${
-                  acompanharScroll
-                    ? 'bg-[var(--accent-soft)] border-[var(--accent-border)] text-[var(--accent-text)]'
-                    : 'bg-[var(--btn-secondary-bg)] border-[var(--btn-secondary-border)] text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-                }`}
+                className={`px-3 py-2 rounded-lg border text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap shrink-0 ${acompanharScroll
+                  ? 'bg-[var(--accent-soft)] border-[var(--accent-border)] text-[var(--accent-text)]'
+                  : 'bg-[var(--btn-secondary-bg)] border-[var(--btn-secondary-border)] text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+                  }`}
               >
                 <ArrowDown className={`w-3.5 h-3.5 ${executandoRito && acompanharScroll ? 'animate-bounce' : ''}`} />
                 <span>Auto-Scroll: {acompanharScroll ? 'ON' : 'OFF'}</span>
@@ -1503,15 +1620,13 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
                 type="button"
                 onClick={iniciarRitoVisual}
                 disabled={!mtlsAutenticado || executandoRito}
-                className={`px-5 py-2.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all whitespace-nowrap shrink-0 ${
-                  !mtlsAutenticado
-                    ? 'bg-[var(--btn-secondary-bg)] border border-[var(--border-subtle)] text-[var(--text-muted)] cursor-not-allowed'
-                    : 'bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] disabled:opacity-60 text-[var(--accent-on-primary)] cursor-pointer'
-                } ${
-                  tourAtivo && tourPasso === 2
+                className={`px-5 py-2.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all whitespace-nowrap shrink-0 ${!mtlsAutenticado
+                  ? 'bg-[var(--btn-secondary-bg)] border border-[var(--border-subtle)] text-[var(--text-muted)] cursor-not-allowed'
+                  : 'bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] disabled:opacity-60 text-[var(--accent-on-primary)] cursor-pointer'
+                  } ${tourAtivo && tourPasso === 2
                     ? 'relative z-50 ring-4 ring-emerald-400 ring-offset-4 ring-offset-slate-900 shadow-2xl shadow-emerald-500/50 scale-[1.02]'
                     : ''
-                }`}
+                  }`}
               >
                 {!mtlsAutenticado ? (
                   <>
@@ -1591,8 +1706,8 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
               const isConcluido = hasRealState
                 ? item.estado === 'REAL_OK' || item.estado === 'CONDICIONAL_DISPENSADA'
                 : concluido ||
-                  etapaAtual > item.etapa ||
-                  (etapaAtual === item.etapa && !executandoRito && etapaAtual > 0)
+                etapaAtual > item.etapa ||
+                (etapaAtual === item.etapa && !executandoRito && etapaAtual > 0)
               const isBloqueado = item.estado === 'BLOQUEADO_DETRAN'
               const isAguardando = item.estado === 'AGUARDANDO_ACAO'
               const isProcessando = executandoRito && etapaAtual === item.etapa
@@ -1612,13 +1727,12 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
                 >
                   <div
                     aria-hidden="true"
-                    className={`absolute -left-10 sm:-left-12 top-3 w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 flex items-center justify-center font-mono text-[11px] font-bold transition-colors duration-200 ${
-                      isConcluido
-                        ? 'bg-[var(--accent-primary)] border-[var(--accent-border)] text-[var(--accent-on-primary)]'
-                        : isProcessando
+                    className={`absolute -left-10 sm:-left-12 top-3 w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 flex items-center justify-center font-mono text-[11px] font-bold transition-colors duration-200 ${isConcluido
+                      ? 'bg-[var(--accent-primary)] border-[var(--accent-border)] text-[var(--accent-on-primary)]'
+                      : isProcessando
                         ? 'bg-sky-600 border-sky-400 text-white'
                         : 'bg-[var(--bg-surface-alt)] border-[var(--border-strong)] text-[var(--text-muted)]'
-                    }`}
+                      }`}
                   >
                     {isConcluido ? (
                       <Check className="w-4 h-4" />
@@ -1637,19 +1751,17 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
                       setEtapaSelecionada(item)
                     }}
                     title={`Inspecionar ${item.metodo} ${item.endpoint}`}
-                    className={`w-full text-left px-4 py-3 rounded-xl border transition-all duration-200 cursor-pointer group focus-visible:outline-2 focus-visible:outline-[var(--accent-primary)] ${
-                      isConcluido
-                        ? 'bg-[var(--bg-surface-alt)] border-[var(--semantic-success-border)]'
-                        : isProcessando
+                    className={`w-full text-left px-4 py-3 rounded-xl border transition-all duration-200 cursor-pointer group focus-visible:outline-2 focus-visible:outline-[var(--accent-primary)] ${isConcluido
+                      ? 'bg-[var(--bg-surface-alt)] border-[var(--semantic-success-border)]'
+                      : isProcessando
                         ? 'bg-[var(--semantic-info-bg)] border-[var(--semantic-info-border)] ring-2 ring-[var(--semantic-info-border)]'
                         : !mtlsAutenticado
-                        ? 'bg-[var(--bg-surface-alt)] border-[var(--border-subtle)] opacity-80'
-                        : 'bg-[var(--bg-surface-alt)] border-[var(--border-subtle)] hover:border-[var(--border-strong)]'
-                    } ${
-                      tourAtivo && tourPasso === 3 && idx === 0
+                          ? 'bg-[var(--bg-surface-alt)] border-[var(--border-subtle)] opacity-80'
+                          : 'bg-[var(--bg-surface-alt)] border-[var(--border-subtle)] hover:border-[var(--border-strong)]'
+                      } ${tourAtivo && tourPasso === 3 && idx === 0
                         ? 'relative z-50 ring-4 ring-emerald-400 ring-offset-4 ring-offset-slate-900 shadow-2xl shadow-emerald-500/50 scale-[1.01]'
                         : ''
-                    }`}
+                      }`}
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
                       <div className="flex items-center gap-2 min-w-0">
@@ -1710,9 +1822,8 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
       <section
         id="passo-3-crlv"
         ref={passo3SectionRef}
-        className={`scroll-mt-20 rounded-xl bg-[var(--bg-surface)] border p-6 space-y-5 transition-colors duration-200 ${
-          concluido ? 'border-[var(--semantic-success-border)]' : 'border-[var(--border-subtle)]'
-        }`}
+        className={`scroll-mt-20 rounded-xl bg-[var(--bg-surface)] border p-6 space-y-5 transition-colors duration-200 ${concluido ? 'border-[var(--semantic-success-border)]' : 'border-[var(--border-subtle)]'
+          }`}
       >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1">
@@ -1741,11 +1852,10 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
                     }, 600)
                   }
                 }}
-                className={`px-4 py-2 rounded-lg bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] text-xs font-bold text-[var(--accent-on-primary)] flex items-center gap-2 cursor-pointer transition-all whitespace-nowrap ${
-                  tourAtivo && tourPasso === 4
-                    ? 'relative z-50 ring-4 ring-emerald-400 ring-offset-4 ring-offset-slate-900 shadow-2xl shadow-emerald-500/50 scale-[1.02]'
-                    : ''
-                }`}
+                className={`px-4 py-2 rounded-lg bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] text-xs font-bold text-[var(--accent-on-primary)] flex items-center gap-2 cursor-pointer transition-all whitespace-nowrap ${tourAtivo && tourPasso === 4
+                  ? 'relative z-50 ring-4 ring-emerald-400 ring-offset-4 ring-offset-slate-900 shadow-2xl shadow-emerald-500/50 scale-[1.02]'
+                  : ''
+                  }`}
               >
                 <Eye className="w-4 h-4" />
                 Visualizar CRLV-e Emitido
@@ -1843,11 +1953,10 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
                   key={t.id}
                   type="button"
                   onClick={() => setAbaModalInspecao(t.id)}
-                  className={`px-3 py-1 rounded-md text-xs font-medium cursor-pointer transition-colors whitespace-nowrap ${
-                    abaModalInspecao === t.id
-                      ? 'bg-[var(--accent-primary)] text-[var(--accent-on-primary)]'
-                      : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-                  }`}
+                  className={`px-3 py-1 rounded-md text-xs font-medium cursor-pointer transition-colors whitespace-nowrap ${abaModalInspecao === t.id
+                    ? 'bg-[var(--accent-primary)] text-[var(--accent-on-primary)]'
+                    : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+                    }`}
                 >
                   {t.label}
                 </button>
@@ -2079,11 +2188,10 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
               >
                 {/* SETA/PONTEIRO */}
                 <div
-                  className={`absolute w-3.5 h-3.5 bg-slate-900 border-emerald-500/40 rotate-45 ${
-                    arrowPlacement === 'top'
-                      ? '-top-2 border-t border-l'
-                      : '-bottom-2 border-b border-r'
-                  }`}
+                  className={`absolute w-3.5 h-3.5 bg-slate-900 border-emerald-500/40 rotate-45 ${arrowPlacement === 'top'
+                    ? '-top-2 border-t border-l'
+                    : '-bottom-2 border-b border-r'
+                    }`}
                   style={{ left: `${arrowLeft}px` }}
                 />
 
@@ -2126,8 +2234,8 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
                     {tourPasso === 1 && mtlsAutenticado
                       ? currentTourStep.completedDesc
                       : tourPasso === 2 && concluido
-                      ? currentTourStep.completedDesc
-                      : currentTourStep.desc}
+                        ? currentTourStep.completedDesc
+                        : currentTourStep.desc}
                   </p>
 
                   <div className="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800 text-[11px] text-emerald-400 flex items-center gap-2">
@@ -2146,13 +2254,12 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
                         key={s}
                         type="button"
                         onClick={() => setTourPasso(s)}
-                        className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
-                          tourPasso === s
-                            ? 'w-6 bg-emerald-400'
-                            : s < tourPasso
+                        className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${tourPasso === s
+                          ? 'w-6 bg-emerald-400'
+                          : s < tourPasso
                             ? 'w-2 bg-emerald-600/70 hover:bg-emerald-500'
                             : 'w-2 bg-slate-700 hover:bg-slate-600'
-                        }`}
+                          }`}
                         title={`Ir para o Passo ${s}`}
                       />
                     ))}
