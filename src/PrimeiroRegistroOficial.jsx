@@ -653,6 +653,18 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
     }
   }
 
+  function payloadNfeParaFluxo() {
+    return {
+      chaveNfe: analiseNfe?.campos?.chaveAcesso || chaveNfeInformada?.trim() || dados?.nfe?.chaveAcesso,
+      chassi: analiseNfe?.campos?.chassi || dados?.veiculo?.chassi,
+      cpfOperador: analiseNfe?.campos?.cpfDestinatario || dados?.adquirente?.cpf,
+      nomeOperador: analiseNfe?.campos?.nomeDestinatario || dados?.adquirente?.nome,
+      dataNascimento: dados?.adquirente?.dataNascimento?.split('/')?.reverse()?.join('-'),
+      email: dados?.adquirente?.email,
+      endereco: dados?.adquirente?.endereco
+    }
+  }
+
   function pararPilotoAutomatico(mostrarToast = true) {
     pilotoCanceladoRef.current = true
     setPilotoAutomatico(false)
@@ -718,7 +730,7 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
       if (!concluido) {
         setExecutandoRito(true)
         setEtapaAtual(1)
-        const { data: ritoRes } = await api.post('/oficial/executar-15-etapas')
+        const { data: ritoRes } = await api.post('/oficial/executar-15-etapas', payloadNfeParaFluxo())
         if (onAtualizarDashboard) onAtualizarDashboard()
         setEtapasReais(ritoRes?.etapas || null)
         setBloqueiosReais(ritoRes?.bloqueios || [])
@@ -911,7 +923,7 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
     setEtapaAtual(1)
 
     try {
-      const { data: ritoRes } = await api.post('/oficial/executar-15-etapas')
+      const { data: ritoRes } = await api.post('/oficial/executar-15-etapas', payloadNfeParaFluxo())
       if (onAtualizarDashboard) onAtualizarDashboard()
       setEtapasReais(ritoRes?.etapas || null)
       setBloqueiosReais(ritoRes?.bloqueios || [])
