@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   ShieldCheck,
   Download,
+  Upload,
   RefreshCw,
   ArrowRight,
   ShieldAlert,
@@ -1254,7 +1255,7 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
                 }}
                 className="block w-full text-xs text-[var(--text-secondary)] file:mr-3 file:rounded-md file:border file:border-[var(--border-strong)] file:bg-[var(--bg-surface)] file:px-3 file:py-2 file:text-xs file:font-semibold file:text-[var(--text-primary)] hover:file:bg-[var(--bg-surface-alt)]"
               />
-                <span className="block text-[10px] text-[var(--text-muted)]">Máximo 15 MB. PDF digitalizado pode usar OCR assistido.</span>
+              <span className="block text-[10px] text-[var(--text-muted)]">Máximo 15 MB. PDF digitalizado pode usar OCR assistido.</span>
             </label>
             <label className="block space-y-1.5">
               <span className="text-[11px] font-semibold text-[var(--text-secondary)]">Chave de acesso (opcional com arquivo)</span>
@@ -1327,8 +1328,8 @@ export default function PrimeiroRegistroOficial({ onAtualizarDashboard, onProgre
                 {analiseNfe.status === 'CHAVE_COMPATIVEL_PENDENTE_VALIDACAO_DETRAN'
                   ? <AlertCircle className="w-4 h-4 text-[var(--semantic-warning-text)]" />
                   : analiseNfe.sucesso
-                  ? <CheckCircle2 className="w-4 h-4 text-[var(--semantic-success-text)]" />
-                  : <AlertCircle className="w-4 h-4 text-[var(--semantic-danger-text)]" />}
+                    ? <CheckCircle2 className="w-4 h-4 text-[var(--semantic-success-text)]" />
+                    : <AlertCircle className="w-4 h-4 text-[var(--semantic-danger-text)]" />}
                 <span className={analiseNfe.status === 'CHAVE_COMPATIVEL_PENDENTE_VALIDACAO_DETRAN' ? 'text-[var(--semantic-warning-text)]' : analiseNfe.sucesso ? 'text-[var(--semantic-success-text)]' : 'text-[var(--semantic-danger-text)]'}>
                   {analiseNfe.error || (analiseNfe.status === 'CHAVE_COMPATIVEL_PENDENTE_VALIDACAO_DETRAN' ? 'Chave reconhecida; campos do veículo serão conferidos no retorno do DETRAN' : analiseNfe.sucesso ? 'Documento compatível com a massa da PoC' : 'Documento divergente ou incompleto')}
                 </span>
