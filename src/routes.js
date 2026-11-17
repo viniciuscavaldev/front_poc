@@ -9,10 +9,10 @@ import {
 
 export const MODULE_ROUTES = [
   {
-    id: 'oficial',
-    path: '/primeiro-registro',
-    label: 'Item 1 · Primeiro Registro',
-    icon: FileCheck2
+    id: 'etapa1',
+    path: '/transferencia-usados',
+    label: 'Transferência de Usados',
+    icon: ArrowLeftRight
   },
   {
     id: 'dashboard',
@@ -37,12 +37,5 @@ export const MODULE_ROUTES = [
     path: '/mesa-revisora',
     label: 'Mesa Revisora & Faixas',
     icon: ShieldCheck
-  },
-  {
-    id: 'etapa1',
-    path: '/transferencia-usados',
-    label: 'Item 2 · Transferência de Usados',
-    upcoming: true,
-    icon: ArrowLeftRight
   }
 ]

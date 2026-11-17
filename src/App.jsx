@@ -24,6 +24,16 @@ import MesaRevisoraPage from './pages/MesaRevisoraPage'
 import TransferenciaUsadosPage from './pages/TransferenciaUsadosPage'
 
 const api = axios.create({ baseURL: '/api/poc-ce', timeout: 15000 })
+api.interceptors.request.use((config) => {
+  try {
+    const saved = localStorage.getItem('necava_auth')
+    const parsed = saved ? JSON.parse(saved) : null
+    if (parsed?.token) {
+      config.headers.Authorization = `Bearer ${parsed.token}`
+    }
+  } catch (_) {}
+  return config
+})
 
 function AppContent() {
   const toast = useToast()
@@ -97,6 +107,7 @@ function AppContent() {
   const [arquivosEtapa3, setArquivosEtapa3] = useState([])
   const [processandoLote, setProcessandoLote] = useState(false)
   const [cronometro, setCronometro] = useState(0)
+  const [etapa3Modo, setEtapa3Modo] = useState('NENHUM')
   const [resultadosEtapa3, setResultadosEtapa3] = useState([])
   const [csvEtapa3, setCsvEtapa3] = useState('')
   const [ultimaExecEtapa3Info, setUltimaExecEtapa3Info] = useState(null)
@@ -152,6 +163,7 @@ function AppContent() {
 
       if (uExec?.data?.sucesso && uExec.data.execucao) {
         setUltimaExecEtapa3Info(uExec.data.execucao)
+        setEtapa3Modo('INFERENCIA_REAL')
         setResultadosEtapa3((prev) => {
           if (!prev.length && uExec.data.execucao.resultados?.length) {
             setCronometro(uExec.data.execucao.tempoSegundos)
@@ -205,7 +217,11 @@ function AppContent() {
   }, [auth, activeRouteObj])
 
   function capturarGeo() {
-    if (!navigator.geolocation) return
+    if (!navigator.geolocation) {
+      setGeo(null)
+      toast.error('Geolocalização indisponível', 'Este navegador não fornece a localização do dispositivo.')
+      return
+    }
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setGeo({ lat: pos.coords.latitude, lng: pos.coords.longitude })
@@ -215,8 +231,8 @@ function AppContent() {
         )
       },
       () => {
-        setGeo({ lat: -3.7319, lng: -38.5267 })
-        toast.success('Geolocalização Registrada', 'Coordenadas Fortaleza/CE (-3.7319, -38.5267).')
+        setGeo(null)
+        toast.error('Geolocalização não autorizada', 'Permita o acesso à localização e tente novamente. Nenhuma coordenada foi registrada.')
       }
     )
   }
@@ -234,7 +250,7 @@ function AppContent() {
       )
       await carregarTudo()
     } catch (err) {
-      const msg = err.response?.data?.mensagem || err.message
+      const msg = err.response?.data?.mensagem || err.response?.data?.error || err.message
       setMsgProc(msg)
       toast.error('Bloqueio na Abertura do Processo', msg)
     }
@@ -274,21 +290,21 @@ function AppContent() {
   async function decidirMesa(id, decisao) {
     const defaultJust =
       decisao === 'APROVAR'
-        ? 'Documento e assinatura conferidos visualmente e considerados autênticos pelo servidor do DETRAN-CE.'
-        : 'Documento reprovado por inconsistência cadastral / grafotécnica na análise visual.'
+        ? 'Parecer favorável registrado pelo operador após conferência dos elementos apresentados.'
+        : 'Parecer desfavorável registrado pelo operador; descreva a inconsistência observada.'
     const just = (justificativas[id] || '').trim() || defaultJust
     try {
       const res = await api.post(`/mesa-revisora/${id}/decisao`, { decisao, justificativa: just })
       const protocolo = res.data?.processo?.protocolo || res.data?.protocolo || `#${id}`
       if (decisao === 'APROVAR') {
         toast.success(
-          'Processo Aprovado na Mesa Revisora',
-          `${protocolo} deferido e averbado no Ledger SHA-256.`
+          'Parecer favorável registrado',
+          `${protocolo} liberado para prosseguir. Isso não conclui nem averba o processo.`
         )
       } else {
         toast.error(
-          'Processo Reprovado com Notificação',
-          `${protocolo} reprovado e notificação formal enviada.`
+          'Parecer desfavorável registrado',
+          `${protocolo} reprovado na mesa. Nenhuma notificação externa foi enviada.`
         )
       }
       await carregarTudo()
@@ -314,20 +330,22 @@ function AppContent() {
         }
       })
       const statusRet = res.data?.status
-      if (statusRet === 'REPROVADO') {
+      if (statusRet === 'REPROVADO_AUTO' || statusRet === 'REPROVADO_MANUAL') {
         toast.error(
           'Reprovação Automática (Faixa Vermelha)',
           `${res.data?.protocolo || 'Processo'} bloqueado automaticamente com Score ${score}%.`
         )
-      } else if (statusRet === 'EM_REVISAO_MANUAL') {
+      } else if (statusRet === 'MESA_REVISORA') {
         toast.success(
           'Caso Encaminhado à Mesa Revisora',
           `${res.data?.protocolo || 'Novo processo'} roteado para análise humana (Score ${score}%).`
         )
       } else {
         toast.success(
-          'Aprovação Automática (Faixa Verde)',
-          `${res.data?.protocolo || 'Processo'} liberado automaticamente com Score ${score}%.`
+          statusRet === 'EM_ANDAMENTO' || statusRet === 'APROVADO_AUTO'
+            ? 'Classificação automática favorável'
+            : 'Processo criado',
+          `${res.data?.protocolo || 'Processo'} status ${statusRet || 'desconhecido'} com Score ${score}%. Não representa averbação.`
         )
       }
       await carregarTudo()
@@ -344,6 +362,8 @@ function AppContent() {
     const t0 = performance.now()
     let endpointAcionado = '/api/poc-ce/processos'
     let requestPayload = {}
+    let bloqueioEsperado = false
+    const statusBloqueioEsperado = { 'F-01': 422, 'F-02': 409, 'F-03': 422, 'F-04': 409 }
 
     try {
       if (cenario === 'F-01') {
@@ -421,18 +441,24 @@ function AppContent() {
           executadoEm: new Date().toISOString()
         }
       }))
+      setResultadoEtapa2(JSON.stringify({ ...okPayload, validacaoConfirmada: false }, null, 2))
       if (!skipRefresh) await carregarTudo()
+      return false
     } catch (err) {
       const duracaoMs = Math.round(performance.now() - t0)
-      const statusHttp = err.response?.status || 422
+      const statusHttp = err.response?.status || 0
       const responseData = err.response?.data || { error: err.message }
+      bloqueioEsperado = statusHttp === statusBloqueioEsperado[cenario] && responseData?.cenario === cenario
       setResultadoEtapa2(JSON.stringify(responseData, null, 2))
-      setEtapa2Testados((prev) => (prev.includes(cenario) ? prev : [...prev, cenario]))
+      if (bloqueioEsperado) {
+        setEtapa2Testados((prev) => (prev.includes(cenario) ? prev : [...prev, cenario]))
+      }
       setHistoricoEtapa2((prev) => ({
         ...prev,
         [cenario]: {
           cenario,
-          bloqueado: true,
+          bloqueado: bloqueioEsperado,
+          validacaoConfirmada: bloqueioEsperado,
           statusHttp,
           duracaoMs,
           metodo: 'POST',
@@ -443,10 +469,13 @@ function AppContent() {
         }
       }))
       toast.error(
-        `Bloqueio Antifraude ${cenario} Ativado`,
-        responseData?.mensagem || err.message
+        bloqueioEsperado ? `Bloqueio Antifraude ${cenario} Confirmado` : `Teste ${cenario} Não Comprovado`,
+        bloqueioEsperado
+          ? responseData?.mensagem || err.message
+          : `A resposta não corresponde ao bloqueio esperado (HTTP ${statusBloqueioEsperado[cenario]}, cenário ${cenario}). ${responseData?.error || err.message}`
       )
       if (!skipRefresh) await carregarTudo()
+      return bloqueioEsperado
     } finally {
       setExecutandoEtapa2((prev) => (prev === 'ALL' ? 'ALL' : ''))
     }
@@ -456,17 +485,24 @@ function AppContent() {
     setExecutandoEtapa2('ALL')
     const cenarios = ['F-01', 'F-02', 'F-03', 'F-04']
     try {
+      const resultados = []
       for (let i = 0; i < cenarios.length; i++) {
-        await testarEtapa2(cenarios[i], null, true)
+        resultados.push(await testarEtapa2(cenarios[i], null, true))
         if (i < cenarios.length - 1) {
           await new Promise((resolve) => setTimeout(resolve, 750))
         }
       }
       await carregarTudo()
-      toast.success(
-        'Bateria Antifraude Concluída (4/4)',
-        'Todos os bloqueios eliminatórios F-01 a F-04 foram comprovados e gravados na trilha VD-07.'
-      )
+      const confirmados = cenarios.filter((_, index) => resultados[index])
+      const pendentes = cenarios.filter((_, index) => !resultados[index])
+      if (pendentes.length === 0) {
+        toast.success('Bateria Antifraude Comprovada (4/4)', 'Os quatro bloqueios esperados foram retornados e registrados.')
+      } else {
+        toast.error(
+          `Bateria Antifraude Incompleta (${confirmados.length}/4)`,
+          `Não comprovados: ${pendentes.join(', ')}. Verifique as respostas e integrações antes de apresentar o resultado.`
+        )
+      }
     } finally {
       setExecutandoEtapa2('')
     }
@@ -509,17 +545,18 @@ function AppContent() {
 
   async function rodarTreino100Fotos() {
     setProcessandoLote(true)
+    setEtapa3Modo('REPLAY_CSV')
     setCronometro(0)
     const t0 = performance.now()
     const timer = setInterval(() => {
       setCronometro((performance.now() - t0) / 1000)
     }, 50)
     try {
-      const res = await fetch('/api/poc-ce/etapa3/simular-100-fotos', { method: 'POST' })
-      const data = await res.json()
+      const res = await api.post('/etapa3/simular-100-fotos')
+      const data = res.data
       clearInterval(timer)
-      const tempo = data.tempoSegundos || 28.18
-      setCronometro(tempo)
+      setCronometro(0)
+      setEtapa3Modo('REPLAY_CSV')
       setResultadosEtapa3(
         data.linhas.map((l) => ({
           Arquivo: l.arquivo,
@@ -533,10 +570,7 @@ function AppContent() {
         }))
       )
       setCsvEtapa3('/api/poc-ce/etapa3/download-csv-treino')
-      toast.success(
-        'CSV Export Ready',
-        `${data.linhas.length} imagens processadas em ${Number(tempo).toFixed(2)}s (SLA ≤ 60s).`
-      )
+      toast.success('Replay do CSV carregado', `${data.linhas.length} resultados pré-processados exibidos; este replay não mede inferência nem SLA.`)
       await carregarTudo()
     } catch (err) {
       clearInterval(timer)
@@ -550,6 +584,7 @@ function AppContent() {
 
   async function processarLote() {
     setProcessandoLote(true)
+    setEtapa3Modo('INFERENCIA_REAL')
     setCronometro(0)
     const start = performance.now()
     const timer = setInterval(() => setCronometro((performance.now() - start) / 1000), 50)
@@ -560,18 +595,25 @@ function AppContent() {
         headers: { 'Content-Type': 'multipart/form-data' },
         timeout: 90000
       })
-      setCronometro(res.data.tempoSegundos)
+      const tempoRequisicao = (performance.now() - start) / 1000
+      setCronometro(tempoRequisicao)
       setResultadosEtapa3(res.data.resultados)
+      setEtapa3Modo('INFERENCIA_REAL')
       setCsvEtapa3(res.data.csv)
-      toast.success(
-        'CSV Export Ready',
-        `${res.data.resultados.length} imagens normalizadas em ${Number(res.data.tempoSegundos).toFixed(2)}s.`
-      )
+      if (res.data.sucesso) toast.success('Lote validado', `100 imagens, campos do Anexo I completos e requisição em ${tempoRequisicao.toFixed(2)}s.`)
+      else toast.error('Lote sem conformidade completa', `${res.data.conformidadeAnexoI}/100 resultados completos; confira as linhas marcadas com erro.`)
       await carregarTudo()
     } catch (err) {
-      const msg = err.response?.data?.mensagem || err.message
+      const payload = err.response?.data
+      if (Array.isArray(payload?.resultados)) {
+        setResultadosEtapa3(payload.resultados)
+        setEtapa3Modo('INFERENCIA_REAL')
+        setCsvEtapa3(payload.csv || '')
+        setCronometro((performance.now() - start) / 1000)
+      }
+      const msg = payload?.mensagem || payload?.error || err.message
       setErroGlobal(msg)
-      toast.error('Erro no Processamento em Lote', msg)
+      toast.error(payload?.resultados ? 'Lote processado com pendências' : 'Erro no Processamento em Lote', msg)
     } finally {
       clearInterval(timer)
       setProcessandoLote(false)
@@ -738,8 +780,8 @@ function AppContent() {
     {
       id: 'etapa1',
       shortLabel: 'Transferência',
-      status: 'inactive',
-      detail: 'Item 2 · Próxima PoC'
+      status: processosTrf.some((p) => p.status === 'CONCLUIDO') ? 'complete' : processosTrf.length > 0 ? 'warning' : 'inactive',
+      detail: processosTrf.length > 0 ? `${processosTrf.length} processo(s)` : 'Fluxo 3.1'
     }
   ]
 
@@ -798,12 +840,6 @@ function AppContent() {
               <h1 className="text-sm font-bold text-[var(--text-primary)] tracking-tight truncate">
                 {activeRouteObj.label}
               </h1>
-              <span className="text-[var(--text-subtle)] hidden xl:inline" aria-hidden="true">
-                ·
-              </span>
-              <span className="text-xs font-mono text-[var(--text-muted)] truncate hidden xl:inline">
-                {activeRouteObj.path}
-              </span>
             </div>
           </div>
 
@@ -865,8 +901,8 @@ function AppContent() {
           )}
 
           <Routes>
-            <Route path="/" element={<Navigate to="/primeiro-registro" replace />} />
-            <Route path="/login" element={<Navigate to="/primeiro-registro" replace />} />
+            <Route path="/" element={<Navigate to="/transferencia-usados" replace />} />
+            <Route path="/login" element={<Navigate to="/transferencia-usados" replace />} />
             <Route
               path="/primeiro-registro"
               element={
@@ -919,11 +955,15 @@ function AppContent() {
               element={
                 <VisaoComputacionalPage
                   cronometro={cronometro}
+                  etapa3Modo={etapa3Modo}
                   ultimaExecEtapa3Info={ultimaExecEtapa3Info}
                   resultadosEtapa3={resultadosEtapa3}
                   resultadosEtapa3Filtrados={resultadosEtapa3Filtrados}
                   arquivosEtapa3={arquivosEtapa3}
-                  onSelecionarArquivos={setArquivosEtapa3}
+                  onSelecionarArquivos={(files) => {
+                    setArquivosEtapa3(files)
+                    setEtapa3Modo('NENHUM')
+                  }}
                   processandoLote={processandoLote}
                   onProcessarLote={processarLote}
                   onRodarTreino100Fotos={rodarTreino100Fotos}
@@ -936,6 +976,7 @@ function AppContent() {
                     if (!exec) return
                     setUltimaExecEtapa3Info(exec)
                     setCronometro(Number(exec.tempoSegundos || 0))
+                    setEtapa3Modo('INFERENCIA_REAL')
                     setResultadosEtapa3(exec.resultados || [])
                     setCsvEtapa3(exec.downloadUrl || '')
                   }}
@@ -983,7 +1024,7 @@ function AppContent() {
                 />
               }
             />
-            <Route path="*" element={<Navigate to="/primeiro-registro" replace />} />
+            <Route path="*" element={<Navigate to="/transferencia-usados" replace />} />
           </Routes>
         </main>
       </div>
